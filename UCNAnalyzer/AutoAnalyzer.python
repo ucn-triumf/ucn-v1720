@@ -1,0 +1,30 @@
+#!/usr/bin/python
+import os
+import glob
+import time
+import subprocess
+
+#loop forever
+while True:
+    midasfilelist = sorted(glob.glob("/home/midas/online/data/run*_*.mid.gz"))
+
+    if len(midasfilelist)>1:
+        # run analysis on first one in the list
+        infilename = midasfilelist[0]
+        run = infilename[27:32]
+        subrun = infilename[33:37]
+        command = "UCNAnalyzer.exe "+infilename+" > "+infilename+".log"
+        print command
+        retval=os.system(command)
+        if retval==0:
+            command = "mv output%08d.root output%08d_%04d.root"%(int(run),int(run),int(subrun))
+            print command
+            os.system(command)
+            command = "mv "+infilename+" "+infilename+".analyzed"
+            print command
+            os.system(command)
+        else:
+            print "Abnormal termination of UCNAnalyzer = ",retval
+    else:
+        print "."
+    time.sleep(2)
