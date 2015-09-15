@@ -4,11 +4,21 @@
 #include "TF1.h"
 #include <cmath>
 
-TUCNAnaManager::TUCNAnaManager(){
+TUCNAnaManager::TUCNAnaManager(int run, int time){
 
   //fUCNEvent = NULL;
   gStyle->SetOptFit(1111);
 
+  // tree for run transitions
+  tRunTran = new TTree("tRunTran", "RunTransitions");
+  tRunTran->Branch("tRunNum", &tRunNum, "tRunNum/I" );
+  tRunTran->Branch("tTime", &tTime, "tTime/I" );
+  tRunTran->Branch("tEntry",&tEntry, "tEntry/l" );
+
+  tRunNum = run;
+  tTime = time;
+  tEntry=0;
+  
   // tree for runtime event data
   tUCN=new TTree("tUCN","Event");
   tUCN->Branch("tEntry",    &tEntry,    "tEntry/l");
@@ -20,7 +30,6 @@ TUCNAnaManager::TUCNAnaManager(){
   tUCN->Branch("tBaseline", &tBaseline, "tBaseline/s");
   tUCN->Branch("tLength",   &tLength,   "tLength/s");
   // tUCN->Branch("tPulse",     tPulse,    "tPulse[tLength]/s");
-  tEntry=0;
 
   // tree for slow control data
   tSlow = new TTree("tSlow", "Slow");
@@ -73,13 +82,21 @@ TUCNAnaManager::~TUCNAnaManager(){
 
 }
 
+void TUCNAnaManager::EndRun(int run, int time){
+  //tRunNum = run;
+  //tTime = time;
+  tRunTran->Fill();
+}
+
 
 // Analyze Data and Save to TTree
 int TUCNAnaManager::FindAndFitPulses(TDataContainer& dataContainer){
 
   // Loop over all the data, fill the histograms and and find histograms.
   TMidasEvent sample = dataContainer.GetMidasEvent();
-  int eventID;
+  //int eventID;
+
+  // printf("time: %d\n",sample.GetTimeStamp());
 
   // output bank block information
   if(verbose) {
@@ -194,6 +211,9 @@ int TUCNAnaManager::FindAndFitPulses(TDataContainer& dataContainer){
 	  
 	  // fill event tree
 	  tUCN->Fill();
+	  tTime = sample.GetTimeStamp();
+	  if (tEntry==0) tRunTran->Fill();
+	     
 	  tEntry++;
 	  subTotEvent++;
 	  subTotEventH++;

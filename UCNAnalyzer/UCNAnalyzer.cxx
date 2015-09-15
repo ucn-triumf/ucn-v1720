@@ -27,9 +27,13 @@ public:
 
   void BeginRun(int transition,int run,int time){
     if(anaManager) delete anaManager;
-    anaManager = new TUCNAnaManager();
+    anaManager = new TUCNAnaManager(run, time);
   }
 
+  void EndRun(int transition, int run, int time){
+      anaManager->EndRun( run, time );
+  }
+   
 
   bool ProcessMidasEvent(TDataContainer& dataContainer){
 

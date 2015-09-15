@@ -18,16 +18,23 @@ class TUCNAnaManager {
   
  public:
   
-  TUCNAnaManager();
+  TUCNAnaManager(int run, int time);
   ~TUCNAnaManager();
   
   /// Processes the midas event, fills histograms, etc.
   int ProcessMidasEvent(TDataContainer& dataContainer);
   int FindAndFitPulses(TDataContainer& dataContainer);
-  
+  void EndRun(int run, int time);
+
  private:
   
   double fFirstPulseFittedTime;
+
+
+  TTree * tRunTran; // run transitions
+  int     tRunNum;
+  int     tTime;
+
 
   // output file
   TTree * tUCN;
