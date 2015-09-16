@@ -77,8 +77,9 @@ CascadeTOF::CascadeTOF( char * infilename ){//, int nx, int ny, int ntbins, floa
 	       <<fBegMin<<":"
 	       <<fBegSec<<std::endl;
       // build the unix timestamp
+      // Use the ROOT UTC time offset:  counting from 01/01/1995
       std::tm timeinfo;
-      timeinfo.tm_year = fBegYr+2000-1900;
+      timeinfo.tm_year = fBegYr+2000-1995;
       timeinfo.tm_mon  = fBegMon-1;
       timeinfo.tm_mday = fBegDay;
       timeinfo.tm_hour = fBegHr; // may need to adjust for timezone -- this number works for winnipeg?
