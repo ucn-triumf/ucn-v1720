@@ -21,7 +21,7 @@
 #include <ctime>
 
 /// CascadeTOF: Class to hold the data from one Cascade data run that
-/// is a count vs time series The constructor takes the inputfilename,
+/// is a count vs time series.   The constructor takes the inputfilename,
 /// without any .tof or .txt, and opens the .txt file to read in the
 /// run settings.  The .tof file is then read and turned into a
 /// histogram with one bin per time, with the x-axis correctly scaled.
@@ -40,7 +40,11 @@ public:
   ~CascadeTOF() { return; };
 
   /// Get Method to get a pointer to the count vs time histogram
-  TH1D* GetHist(){ return fTOF; };
+  /// For time starting at 0.
+  TH1D* GetHist0(){ return fTOF; };
+
+  /// Get histogram with unix time on x-axis
+  TH1D* GetHist(){ return fTOFt; }
 
   /// Get Method for start time as a unix timestamp in GMT
   std::time_t GetStartTime();
@@ -48,6 +52,15 @@ public:
   /// Get Method for an end time as a unix timestamp in GMT
   std::time_t GetEndTime();
   
+  /// Get date as a 6 digit YYMMDD integer
+  int GetDate(){ return fBegYr*10000 + fBegMon*100 + fBegDay; };
+
+  /// Get Run Length in 100 ns ticks
+  int GetRunLength(){ return fRunLength; };
+
+  /// Get Run Length in seconds
+  float GetRunLengthSec(){ return float( fRunLength ) / 10000000.0; };
+
 private:
   std::time_t fStartTime;   //< Start time as unix timestamp in GMT
   std::time_t fEndTime;     //< End time as unix timestamp in GMT 
@@ -66,7 +79,8 @@ private:
 
   int   fRunLength; //< Absolute time length of run in 100ns ticks
 
-  TH1D* fTOF;    // Count vs time histogram
+  TH1D* fTOF;    // Count vs time histogram (time from 0. to end of cycle)
+  TH1D* fTOFt;    // Count vs time histogram (unix time)
 };
 
 
