@@ -5,8 +5,10 @@
 #include <TDirectory.h>
 
 /// PBeamBunch constructor sets up histograms
-PBeamBunch::PBeamBunch( int bunchnum, ULong64_t mintime, ULong64_t maxtime){
+PBeamBunch::PBeamBunch( int bunchnum, ULong64_t mintime, ULong64_t maxtime, int tstart){
   ibunch = bunchnum;
+
+  fRunT0 = tstart;
 
   tmin = mintime;
   tmax = maxtime; //mintime + ULong64_t(bunchlength) * tickspers;
@@ -16,8 +18,11 @@ PBeamBunch::PBeamBunch( int bunchnum, ULong64_t mintime, ULong64_t maxtime){
 
   int bunchlength = tmaxs - tmins;
 
+  for(int i=0;i<PSD_MAXNCHAN*NDPPBOARDS; i++) tlast[i]=0;
+
   std::cout<<"PBeamBunch "<<bunchnum<<" from "
 	   <<tmins<<" sec to "<< tmaxs<<" sec, total "<<bunchlength<<" sec"
+	   <<" tstart="<<fRunT0
 	   <<std::endl;
 
   // set up histograms in directory
@@ -26,6 +31,10 @@ PBeamBunch::PBeamBunch( int bunchnum, ULong64_t mintime, ULong64_t maxtime){
   sprintf(aname,"bunch%06d",ibunch);
   TDirectory* curdir = gDirectory->mkdir(aname,aname);
   curdir->cd();
+
+  sprintf(aname,"b%06d_hqldt",ibunch);
+  hqldt= new TH2D(aname," ; \Delta t (ns); QL",
+		  200,0,10000.0, 100,0.,15000.0);
 
   char atitle[100];
   for (int ich=0; ich<PSD_MAXNCHAN*NDPPBOARDS; ich++) {
@@ -43,22 +52,49 @@ PBeamBunch::PBeamBunch( int bunchnum, ULong64_t mintime, ULong64_t maxtime){
 
     // rate histograms per channel
     sprintf(aname,"b%06d_ch%02d_hevpers",ibunch, ich);
-    sprintf(atitle,"Rate: Channel %02d bunch %d ; Time (s); Rate (Hz)",
+    sprintf(atitle,"Rate: Channel %02d bunch %d ; Time (s); Rate (count/0.1s)",
 	    ich, ibunch );
-    hevpers[ich] = new TH1D( aname, atitle, bunchlength, 0.0, tmaxs-tmins );
+    hevpers[ich] = new TH1D( aname, atitle, 10*bunchlength, 0.0, double(tmaxs-tmins) );
+
+    // rate histograms per channel in real time
+    sprintf(aname,"b%06d_ch%02d_hevpersrt",ibunch, ich);
+    sprintf(atitle,"Rate: Channel %02d bunch %d ; Real Time (s); Rate (count/0.1s)",
+	    ich, ibunch );
+    std::cout<<"Making histogram "<<aname
+	     <<" with title: "<<atitle
+	     <<" nbins="<<10*bunchlength
+	     <<" from "<<double(fRunT0+tmins)
+	     <<" to  "<<double(fRunT0+tmaxs)
+	     <<std::endl;
+    hevpersrt[ich] = new TH1D( aname, atitle, 10*bunchlength, 
+			       double(fRunT0 + tmins), 
+			       double(fRunT0 + tmaxs) );
 
   }
    
   // overall rate histograms
   sprintf(aname,"b%06d_all_hevper", ibunch);
-  sprintf(atitle,"Rate: all channels bunch %d ; Time (s); Rate (Hz)",
+  sprintf(atitle,"Rate: all channels bunch %d ; Time (s); Rate (count/0.1s)",
 	  ibunch );
-  hevs = new TH1D( aname, atitle, bunchlength, 0.0, tmaxs-tmins );
+  hevs = new TH1D( aname, atitle, 10*bunchlength, 0.0, double(tmaxs-tmins) );
 
   sprintf(aname,"b%06d_all_hevgamma", ibunch);
-  sprintf(atitle,"Gamma rate: all channels bunch %d ; Time (s); Rate (Hz)",
+  sprintf(atitle,"Gamma rate: all channels bunch %d ; Time (s); Rate (count/0.1s)",
 	  ibunch );
-  hevsgamma = new TH1D( aname, atitle, bunchlength, 0.0, tmaxs-tmins );
+  hevsgamma = new TH1D( aname, atitle, 10*bunchlength, 0.0, double(tmaxs-tmins) );
+
+  // now in real time
+  sprintf(aname,"b%06d_all_hevperrt", ibunch);
+  sprintf(atitle,"Rate: all channels bunch %d ; Real Time (s); Rate (count/0.1s)",
+	  ibunch );
+  hevsrt = new TH1D( aname, atitle, 10*bunchlength, 
+			  double(fRunT0 + tmins), double(fRunT0+tmaxs) );
+
+  sprintf(aname,"b%06d_all_hevgammart", ibunch);
+  sprintf(atitle,"Gamma rate: all channels bunch %d ; Real Time (s); Rate (count/0.1s)",
+	  ibunch );
+  hevsgammart = new TH1D( aname, atitle, 10*bunchlength, 
+			  double(fRunT0 + tmins), double(fRunT0+tmaxs) );
 
   rootdir->cd();
   gDirectory=rootdir;
@@ -94,20 +130,29 @@ void PBeamBunch::Fill( int channel, ULong64_t curtime, double qs, double ql ){
   if ( channel==0 || channel==1 || channel==2 || 
        channel==3 || channel==4 || channel==5 || 
        channel==6 || channel==8 || channel==9 ){
+    if ( tlast[channel] != 0 ){
+      hqldt->Fill( curtime - tlast[channel], ql );
+    }
+    tlast[channel] = curtime;
+
     //    if ( ql > 2000.0 && psd > 0.3 ){
-    if ( psd > 0.3 ){
+    if ( psd > 0.3 && ql > 2000.0 ){
       hqsql[channel]->Fill( ql, qs );
       hpsdql[channel]->Fill( ql, psd );
-      hevpers[channel]->Fill( curtime * secperns - tmins ); 
-      hevs->Fill( curtime * secperns - tmins ); 
-    } else if ( ql < 2000 && psd > 0.3 ){
-      hevsgamma->Fill( curtime * secperns - tmins ); 
+      hevpers[channel]->Fill( curtime * secperns - tmins + 0.25); 
+      hevs->Fill( curtime * secperns - tmins + 0.25 ); 
+      hevpersrt[channel]->Fill( float(fRunT0) + curtime * secperns + 6.25 ); 
+      hevsrt->Fill( float(fRunT0) + curtime * secperns + 6.25 ); 
+    } else { 
+      hevsgamma->Fill( curtime * secperns - tmins + 0.25); 
+      hevsgammart->Fill( float(fRunT0) + curtime * secperns +6.25 ); 
     }
   } else {
     // fill other channels normally
       hqsql[channel]->Fill( ql, qs );
       hpsdql[channel]->Fill( ql, psd );
-      hevpers[channel]->Fill( curtime * secperns - tmins );     
+      hevpers[channel]->Fill( curtime * secperns - tmins + 0.25 );     
+      hevpersrt[channel]->Fill( float(fRunT0) + curtime * secperns + 6.25 );     
 
   }
 

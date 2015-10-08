@@ -12,10 +12,14 @@
 
 #include <vector>
 
-const int    TPA_NCHAN = 3; //< Number of channels with a pulser signal
-const int    TPA_CHANS[ TPA_NCHAN ] = {       7,    10  ,    15      }; //< channel numbers with pulser signal
-const double TPA_QLMIN[ TPA_NCHAN ] = { 6000.0,   6000.0,  6000.0    }; //< minimum charge long of pulser signal in each channel
-const double TPA_QLMAX[ TPA_NCHAN ] = { 8000.0,   8000.0,  8000.0    }; //< maximum charge long of pulser signal in each channel
+//const int    TPA_NCHAN = 3; //< Number of channels with a pulser signal
+//const int    TPA_CHANS[ TPA_NCHAN ] = {       7,    10  ,    15      }; //< channel numbers with pulser signal
+const int    TPA_NCHAN = 2; //< Number of channels with a pulser signal
+const int    TPA_CHANS[ TPA_NCHAN ] = {       7,     15      }; //< channel numbers with pulser signal
+//const double TPA_QLMIN[ TPA_NCHAN ] = { 6000.0,   6000.0,  6000.0    }; //< minimum charge long of pulser signal in each channel
+//const double TPA_QLMAX[ TPA_NCHAN ] = { 8000.0,   8000.0,  8000.0    }; //< maximum charge long of pulser signal in each channel
+const double TPA_QLMIN[ TPA_NCHAN ] = { 6000.0,    6000.0    }; //< minimum charge long of pulser signal in each channel
+const double TPA_QLMAX[ TPA_NCHAN ] = { 12000.0,    12000.0    }; //< maximum charge long of pulser signal in each channel
 const double TPA_PULSERFREQ = 1.0; //< Pulser frequency in Hz
 
 /// TPulserAnalysis: Class to look at the 1Hz pulser data.

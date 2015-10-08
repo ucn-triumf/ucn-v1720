@@ -86,12 +86,14 @@ void TPulserAnalysis::CalcPulser( int arun, TTree *atUCN, TUCNTimeWindows * tws 
     std::cout<<"<TPulserAnalysis> one or more pulser signals not found!"<<std::endl;
     return;
   }
+  std::cout<<"minlen="<<minlen<<std::endl;
   
   // offset into pulser times array for each
   // channel, to account for any difference in 
   // time offsets
   double dtmax = 1.0/TPA_PULSERFREQ; // period of pulser 
-  int ifirst[ TPA_NCHAN ] = {0, 0, 0};
+  //int ifirst[ TPA_NCHAN ] = {0, 0, 0};
+  int ifirst[ TPA_NCHAN ] = {0, 0};
   int gotoffsets=0;
   for (int ich=0; ich< TPA_NCHAN; ich++){
     if ( ich == ilatefirst) continue;

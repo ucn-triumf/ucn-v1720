@@ -34,27 +34,33 @@ class TUCNTimeWindows {
   ULong64_t base;   //< Sum of last time in files that CalcTimes was called for
   ULong64_t time1;  //< Earliest time found in last file checked (base corrected)
   ULong64_t time2;  //< Latest time found in last file checked (base corrected)
-  std::vector< double > vBeamTimes; //< Times of UCN "beam bunches" in sec
-  std::vector< double > vStartTimes; //< Times of UCN "beam bunches" in sec
-  std::vector< double > vEndTimes; //< Times of UCN "beam bunches" in sec
+  std::vector< double > vBeamTimes; //< Times of UCN "beam bunches" in sec since start of run
+  std::vector< double > vStartTimes; //< Times of UCN "beam bunches" in sec since start of run
+  std::vector< double > vEndTimes; //< Times of UCN "beam bunches" in sec since start of run
 
   std::vector< bool > isGVclosed; //< Guess at whether gate valve is closed
 
   int nfileschecked; //< Keep count of files checked
   std::vector< TH1D* > twhists; //< Keep vector of pointers to rate histograms
-                        //< that were used to do time windowing.
+                        //< that were used to do time windowing. Time relative to start of run.
+
+  std::vector< TH1D* > twhistsrt; //< Keep vector of pointers to rate histograms
+                        //< with unix time stamp as x axis
 
   TH1D* twhistch[ NDPPBOARDS * PSD_MAXNCHAN]; //< Time window hist for each chan
 
   TH1D* hdtwin; //< Time difference between proton beam pulse times
   TDirectory * twdir; //< Keep a pointer to the directory in which to put
                       //< the rate histograms used for the time windowing
+
+  std::vector< int > vRunStartTimes; //< vector of unix timestamps of run start times.
   
  public:
 
   /// Construtor takes tUCN data tree as input
+  /// along with tRunTran tree with times of run start/stop
   /// and does the search for the UCN pulse times
-  TUCNTimeWindows( int arunnum, TTree * atUCN );
+  TUCNTimeWindows( int arunnum, TTree * atUCN, TTree* atRunTran );
 
   // ~TUCNTimeWindows(){return;}
 
@@ -63,7 +69,7 @@ class TUCNTimeWindows {
   /// after the previous one, and that any subsequent
   /// calls to CalcTimes are with new TTrees at
   /// later sequential times.
-  void CalcTimes( int arunnum, TTree * atUCN );
+  void CalcTimes( int arunnum, TTree * atUCN, TTree* atRunTran );
 
   void Print();
 
@@ -76,15 +82,19 @@ class TUCNTimeWindows {
 
   int NBunches(){ return vBeamTimes.size(); };
 
-  ULong64_t GetTBeg(){ return time1; }; ///< Get first time in file
-  ULong64_t GetTEnd(){ return time2; }; ///< Get last time in file
+  ULong64_t GetTBeg(){ return time1; }; ///< Get first time in file (ns)
+  ULong64_t GetTEnd(){ return time2; }; ///< Get last time in file (ns)
 
-  double GetTBegs(){ return time1*PBNSTOSEC; }; ///< Get first time in file
-  double GetTEnds(){ return time2*PBNSTOSEC; }; ///< Get last time in file
+  double GetTBegs(){ return time1*PBNSTOSEC; }; ///< Get first time in file (seconds)
+  double GetTEnds(){ return time2*PBNSTOSEC; }; ///< Get last time in file (seconds)
   std::vector<double> & GetPBeamTimes(){ return vBeamTimes; }; ///< Get times of UCN pulses
   std::vector<double> & GetStartTimes(){ return vStartTimes; }; ///< Get times of UCN pulses
   std::vector<double> & GetEndTimes(){ return vEndTimes; }; ///< Get times of UCN pulses
 
+  int GetRunStartTime(int ibunch){
+    if ( ibunch >= 0 && ibunch < vRunStartTimes.size() ) return vRunStartTimes.at(ibunch);
+    else return 0;
+  }
   double GetPBeamTime(int ibunch){ 
     if ( ibunch >= 0 && ibunch < vBeamTimes.size() ) return vBeamTimes.at(ibunch);
     else return 0;
