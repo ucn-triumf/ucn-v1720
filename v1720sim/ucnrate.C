@@ -65,7 +65,7 @@ V1720PSDResult * p;
 //
 // B. Jamieson, L. Rebenitsch (2013-2014)
 // --------------------------------------------------------------------
-TH1D* simwavetrain( double nrate = 1000000.0, double grate = 0.0, double count_time = 0.1, bool kDraw = false){
+TH1D* simwavetrain( double nrate = 1000000.0, double grate = 0.0, double count_time = 0.1, double toffset = 0.0, bool kDraw = false){
   static bool first = true;
 
   // if first event for entire wavetrain, initialize TTree structures
@@ -80,6 +80,7 @@ TH1D* simwavetrain( double nrate = 1000000.0, double grate = 0.0, double count_t
     ttrue->Branch("Type",&ttType,"Type/I");
     first=false;
   }
+  std::cout<<"In simwavetrain, ttrue pointer = "<<ttrue<<std::endl;
 
   sig = new PMTSignal();
   fsig = sig->GetSimpleSignal();
@@ -121,7 +122,7 @@ TH1D* simwavetrain( double nrate = 1000000.0, double grate = 0.0, double count_t
 
   // scint signal pulse height distribution?
   // based on average of 50 p.e. collected per scint
-  double ScintNPEAvg = 50;
+  double ScintNPEAvg = 74;
 
   // simulate some noise
   double noiselevel = 4.0; // mV
@@ -131,30 +132,35 @@ TH1D* simwavetrain( double nrate = 1000000.0, double grate = 0.0, double count_t
 
   // simulate the scints
   // only do for pulses that are above threshold?
-  for (int i=0; i<int(ncurrent); i++){
-    adelay = gRandom->Uniform(0.0, xmax);
-    sig->SetTime(adelay);
-    curnpe = gRandom->Poisson( ScintNPEAvg );  
-    ascint = sig->GetSignal( curnpe );
-    ttT = adelay;
-    ttAmp = ascint->GetMaximum();
-    ttFall = sig->GetFallTime();
-    ttType = 0;
-    // only loop over +- 100 bins of peak
-    ibinpeak = int( adelay / aSampRate );
-
-    ttBL = hscope->GetBinContent( ibinpeak );
-    ttrue->Fill();
-
-    // fill scopetrace with simulated scint signal
-    for (int ibin=std::max<int>(1,ibinpeak-100); ibin<=std::min<int>(ibinpeak+1000,hscope->GetNbinsX()); ibin++){
-      //if (ibin%100000==0) std::cout<<"\t"<<ibin<<std::endl;
-      ttt = hscope->GetBinCenter(ibin);
-      hscope->Fill(ttt, ascint->Eval(ttt) );
-    }
+  adelay = 0.0;
+  // lambda for neutrons: (average rate in ns^-1)
+  if ( nrate > 0.0 ){
+    double taun = 1.0e9 / nrate  ;
+    while( adelay < xmax ){
+      //for (int i=0; i<int(ncurrent); i++){
+      adelay += gRandom->Exp( taun );
+      if (adelay > xmax) break;
+      sig->SetTime(adelay);
+      curnpe = gRandom->Poisson( ScintNPEAvg );  
+      ascint = sig->GetSignal( curnpe );
+      ttT = adelay + toffset;
+      ttAmp = ascint->GetMaximum();
+      ttFall = sig->GetFallTime();
+      ttType = 0;
+      // only loop over +- 100 bins of peak
+      ibinpeak = int( adelay / aSampRate );
+      
+      ttBL = hscope->GetBinContent( ibinpeak );
+      ttrue->Fill();
+      
+      // fill scopetrace with simulated scint signal
+      for (int ibin=std::max<int>(1,ibinpeak-100); ibin<=std::min<int>(ibinpeak+1000,hscope->GetNbinsX()); ibin++){
+	//if (ibin%100000==0) std::cout<<"\t"<<ibin<<std::endl;
+	ttt = hscope->GetBinCenter(ibin);
+	hscope->Fill(ttt, ascint->Eval(ttt) );
+      }
+    } 
   }
-
-
 
   // Now simulate the cerenkov events
   nexpected = grate * count_time;
@@ -167,26 +173,33 @@ TH1D* simwavetrain( double nrate = 1000000.0, double grate = 0.0, double count_t
 
   // simulate the cerenkov events
   // only do for pulses that are above threshold?
-  for (int i=0; i<int(ncurrent); i++){
-    adelay = gRandom->Uniform(0.0, xmax);
-    csig->SetTime(adelay);
-    curnpe = gRandom->Exp( CerenkovNPEAvg );  
-    acerenkov = csig->GetSignal( curnpe );
-    ttT = adelay;
-    ttAmp = acerenkov->GetMaximum();
-    ttFall = csig->GetFallTime();
-    ttType = 1;
-    // only loop over +- 100 bins of peak
-    ibinpeak = int( adelay / aSampRate );
-
-    ttBL = hscope->GetBinContent( ibinpeak );
-    ttrue->Fill();
-
-    // fill scopetrace with simulated scint signal
-    for (int ibin=std::max<int>(1,ibinpeak-100); ibin<=std::min<int>(ibinpeak+1000,hscope->GetNbinsX()); ibin++){
-      //if (ibin%100000==0) std::cout<<"\t"<<ibin<<std::endl;
-      ttt = hscope->GetBinCenter(ibin);
-      hscope->Fill(ttt, acerenkov->Eval(ttt) );
+  adelay = 20.0;
+  //tau for gammas
+  if ( grate > 0.0 ){
+    double taug = 1.0e9 / grate;
+    //  for (int i=0; i<int(ncurrent); i++){
+    while ( adelay < xmax ){
+      adelay += gRandom->Exp( taug );
+      if (adelay > xmax) break;
+      csig->SetTime(adelay);
+      curnpe = gRandom->Exp( CerenkovNPEAvg );  
+      acerenkov = csig->GetSignal( curnpe );
+      ttT = adelay + toffset;
+      ttAmp = acerenkov->GetMaximum();
+      ttFall = csig->GetFallTime();
+      ttType = 1;
+      // only loop over +- 100 bins of peak
+      ibinpeak = int( adelay / aSampRate );
+      
+      ttBL = hscope->GetBinContent( ibinpeak );
+      ttrue->Fill();
+      
+      // fill scopetrace with simulated scint signal
+      for (int ibin=std::max<int>(1,ibinpeak-100); ibin<=std::min<int>(ibinpeak+1000,hscope->GetNbinsX()); ibin++){
+	//if (ibin%100000==0) std::cout<<"\t"<<ibin<<std::endl;
+	ttt = hscope->GetBinCenter(ibin);
+	hscope->Fill(ttt, acerenkov->Eval(ttt) );
+      }
     }
   }
 
@@ -221,7 +234,7 @@ int main( int argc, const char* argv[]){
   char filename[256];
   if ( argc != 5 ){
     std::cout<<"Usage: "<<std::endl;
-    std::cout<<" ucnrage NumRuns scintRate(Hz) cerenkovRate(Hz) totalTime(num 0.1s intervals) \n"<<std::endl;
+    std::cout<<" ucnrate NumRuns scintRate(Hz) cerenkovRate(Hz) totalTime(num 0.1s intervals) \n"<<std::endl;
     return 0;
   }
 
@@ -243,14 +256,36 @@ int main( int argc, const char* argv[]){
   tout->Branch("QS",&tQS,"QS/F");
   tout->Branch("QL",&tQL,"QL/F");
   tout->Branch("BL",&tBL,"BL/F");
+  
+  const int MAXNINGATE=5;
+  int tMCNn; // number of true neutrons in QL
+  float tMCTn[MAXNINGATE];; // times of true neutrons in QL
+  float tMCAn[MAXNINGATE];; // amplitudes of true neutrons in QL
+  int tMCNg; // number of true gammas in QL
+  float tMCTg[MAXNINGATE]; // times of true gammas in QL
+  float tMCAg[MAXNINGATE]; // amplitudes of true gammas in QL
+  tout->Branch("MCNn",&tMCNn, "MCNn/I");
+  tout->Branch("MCTn",tMCTn, "MCTn[MCNn]/F");
+  tout->Branch("MCAn",tMCAn, "MCAn[MCNn]/F");
+  tout->Branch("MCNg",&tMCNg, "MCNg/I");
+  tout->Branch("MCTg",tMCTg, "MCTg[MCNg]/F");
+  tout->Branch("MCAg",tMCAg, "MCAg[MCNg]/F");
+
+  ULong64_t ttidxn = 0;
+  ULong64_t ttidxg = 0;
+  ULong64_t ttruenmax;
 
 
-  for(int j=0; j<runNum; j++) {
+  //  for(int j=0; j<runNum; j++) {
     
     TH1D * hanalog;
     
     std::vector< V1720PSDResult > * psd;
     
+
+    // Set up digitizer threshold (in adc)
+    g1720mc.SetThreshold( 250.0 ); // 125.0mV
+
     // simulate 10s of data (0.1 sec at a time, so 100 times
     for (int i=0; i < totalTime; i++){
 
@@ -264,7 +299,33 @@ int main( int argc, const char* argv[]){
       // start with all scints at 1000 kHz 
       // simulate 0.1 s long wavetrains at a time
       // takes a lot of memory, so cant do a full 10s at a time
-      hanalog = simwavetrain( scintRate, cerenkovRate, 0.1, false ); // simulate 0.1 s segment of wavetrain
+      std::cout<<"ttree pointer (before simwavetrain) = "<<ttrue<<std::endl;
+      hanalog = simwavetrain( scintRate, cerenkovRate, 0.1, i*0.1, false ); // simulate 0.1 s segment of wavetrain
+
+      if ( i== 0){  //setup counters for searching truth trees
+	ttruenmax = ttrue->GetEntries(); // get length of entries in truth trees
+	for (ULong64_t ii = 0; ii<ttruenmax; ii++){
+	  ttrue->GetEntry(ii);
+	  if ( ttType == 1 ) {
+	    ttidxg = ii;
+	    break;
+	  }
+	}
+      } else {
+	std::cout<<" second call? "<<std::endl;
+	ttidxn = ttruenmax;
+	ttruenmax = ttrue->GetEntries(); // get length of entries in truth trees (now)
+	for (ULong64_t ii = ttidxn; ii<ttruenmax; ii++){
+	  ttrue->GetEntry(ii);
+	  if ( ttType == 1 ) {
+	    ttidxg = ii;
+	    break;
+	  }
+	}
+      }
+
+
+      std::cout<<"ttree pointer (after simwavetrain) = "<<ttrue<<std::endl;
       psd     = g1720mc.DoPSDAnalysis( hanalog );             // analyze segment of wavetrain
       
       // save segment simulation information to file
@@ -274,6 +335,65 @@ int main( int argc, const char* argv[]){
 	tQS = p->fQS;
 	tQL = p->fQL;
 	tBL = p->fBL;
+
+	// search through the truth tree for the neutrons and gammas
+	// that are within ql
+	tMCNn = 0;
+	tMCNg = 0;
+	
+	// First search for neutrons that are in time with this PSD result
+	ttrue->GetEntry( ttidxn );
+	std::cout<<"nnn PSD pulse "<<j<<" T="<<tT<<"  ttidxn="<<ttidxn<<"/"<<ttruenmax<<" ttT="<<ttT<<std::endl;
+	while ( ttT <  tT+g1720mc.GetLongGate() && ttidxn < ttruenmax ){
+	  bool incr=false;
+	  if ( ttT >= tT -10.0 && ttT < tT+g1720mc.GetLongGate()-10.0 ) {
+	    // this true pulse is in this psd result.
+	    if (ttType == 0) {
+	      if ( tMCNn < MAXNINGATE ){
+		tMCTn[ tMCNn ] = ttT;
+		tMCAn[ tMCNn ] = ttAmp;
+		tMCNn++;
+		incr=true;
+	      } 
+	    } else {
+	      std::cout<<"Ugh... shouldn't find gamma when looking for neutron"<<std::endl; 
+	    }
+	  }
+	  std::cout<<"   ttidxn="<<ttidxn<<" ttT="<<ttT<<" T="<<tT;
+	  if (incr==true) std::cout<<" * ";
+	  std::cout<<std::endl;
+
+	  ttidxn++;
+	  ttrue->GetEntry( ttidxn );
+	}
+
+	// now search for gammas that are in time with this PSD result
+	ttrue->GetEntry( ttidxg );
+	std::cout<<"ggg PSD pulse "<<j<<" T="<<tT<<"  ttidxg="<<ttidxg<<"/"<<ttruenmax<<" ttT="<<ttT<<std::endl;
+	while ( ttT <  tT+g1720mc.GetLongGate() && ttidxg < ttruenmax ){
+	  bool incr=false;
+	  if ( ttT >= tT -10.0 && ttT < tT+g1720mc.GetLongGate()-10.0 ) {
+	    // this true pulse is in this psd result.
+	    if (ttType == 1) {
+	      if ( tMCNg < MAXNINGATE ){
+		tMCTg[ tMCNn ] = ttT;
+		tMCAg[ tMCNn ] = ttAmp;
+		tMCNg++;
+		incr=true;
+	      } 
+	    } else {
+	      std::cout<<"Ugh... shouldn't find neutron when looking for gamma"<<std::endl; 
+	    }
+	  }
+
+	  std::cout<<"   ttidxg="<<ttidxg<<" ttT="<<ttT<<" T="<<tT;
+	  if (incr==true) std::cout<<" * ";
+	  std::cout<<std::endl;
+
+	  ttidxg++;
+	  ttrue->GetEntry( ttidxg );
+	}
+
 	tout->Fill();
       }
     } // end simulating wavetrain
@@ -286,9 +406,9 @@ int main( int argc, const char* argv[]){
     // write data to file and close
     fout->Write();
     //fout->Close();
-  }
-
-  fout->Close();
-  return 0;
+    
+    
+    fout->Close();
+    return 0;
 }
 // end main -----------------------------------------------------------

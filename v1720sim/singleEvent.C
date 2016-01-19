@@ -104,7 +104,8 @@ TH1D* simWave( int nsig = 1, int nbg = 0, int length = 600){
 
   // cerenkov signal pulse height distribution?
   // based on average of 15 p.e. collected per cerenkov
-  double CerenkovNPEAvg = 5;
+  //double CerenkovNPEAvg = 5;
+  double CerenkovNPEAvg = 100;
 
   // simulate some noise
   double noiselevel = 4.0; // mV
@@ -154,11 +155,12 @@ TH1D* simWave( int nsig = 1, int nbg = 0, int length = 600){
     // create new Cerenkhov signal
     csig = new PMTSignal();
     csig->SetCerenkov(true);
+
     cfsig = csig->GetSimpleSignal();
     cfsig->SetNpx(4000);
 
     // only do for pulses that are above threshold?
-    for (int i=0; i<nsig; i++){
+    for (int i=0; i<nbg; i++){
 
       // if first event set to 1/4 position
       if (i == 0) {
@@ -167,7 +169,7 @@ TH1D* simWave( int nsig = 1, int nbg = 0, int length = 600){
       }
       // else, place event in randomized range
       else {
-	adelay = gRandom->Uniform(0.0, xmax);
+	adelay = gRandom->Uniform(peak1+minrange, peak1+maxrange);
 	peak2 = adelay;
       }
       csig->SetTime(adelay);
@@ -198,8 +200,6 @@ TH1D* simWave( int nsig = 1, int nbg = 0, int length = 600){
 //   numScint -- number of scintillator events
 //   numCeren -- number of Cerenkhov events
 //
-// After compiling, run simulation from script
-// $ ./sim.sh
 //
 // Lori Rebenitsch
 // Oct. 29, 2014
@@ -210,12 +210,12 @@ int main( int argc, const char* argv[]){
 
   if ( argc != 4 ){
     std::cout<<"Usage: "<<std::endl;
-    std::cout<<" singleEvent numScint numCeren \n"<<std::endl;
+    std::cout<<" singleEvent numScint numCeren numSig\n"<<std::endl;
     return 0;
   }
 
   char filename[256];
-  sprintf(filename,"doubleSignal1.root");
+  sprintf(filename,"singleBg.root");
   TFile *fout = new TFile((const char *)filename,"recreate");
   TTree *tout = new TTree("TPSD","TPSD");
 

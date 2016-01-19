@@ -84,6 +84,8 @@ class V1720DigitizerMC {
 
   /// method to make baseline histogram from input histogram
   void MakeBaselineHisto();
+  void MakeSingleBaseHisto();
+
 
   int verbose;
 
@@ -94,11 +96,13 @@ class V1720DigitizerMC {
 		   int    aNBLSample = 32,    // number of samples for baseline
 		   double aShortGate = 40.0 , // in ns
 		   double aLongGate  = 200.0, // in ns
-		   double aThreshold = 125.0, //in ADC eg. 300ADC~150mV!
+		   double aThreshold = 250.0, //in ADC eg. 300ADC~150mV!
 		   double aADCpermV  = 4096.0 / 2000.0, // eg 2ADC ~ 1mV
-		   int    aBaseline  = 0, 
+		   int    aBaseline  = -9999, 
 		   double aTrigHold  = 350.0, // hold off in ns
 		   double aGateOff   = 8.0 ); // gate offset in ns
+
+
 
   // Setters
   void SetSampRate ( double aSampRate ) { fSampRate  = aSampRate;  };
@@ -109,7 +113,7 @@ class V1720DigitizerMC {
   void SetADCpermV ( double aADCpermV ) { fADCpermV  = aADCpermV;  };
   void SetBaseline ( int aBaseline )    { fBaseline  = aBaseline;  };
   void SetTrigHold ( double aTrigHold ) { fTrigHold  = aTrigHold;  };
-  void SetGateOff  ( double aGateOff )  { fGateOff   = aGateOff;   }
+  void SetGateOff  ( double aGateOff )  { fGateOff   = aGateOff;   };
 
   // Getters
   double GetSampRate()     { return fSampRate;  };
@@ -128,6 +132,10 @@ class V1720DigitizerMC {
   /// The input histogram is assumed to be binned so that each bin is
   /// one sample length wide, and that it is in units of mV
   std::vector< V1720PSDResult > * DoPSDAnalysis( TH1D* aInputHisto );
+
+  /// Method to get a single PSD result for a trigger happening at ibin
+  V1720PSDResult *GetPSDforTrigger( TH1D * aInputHisto, int ibin );
+  bool GoodTrigger( TH1D * aInputHisto, int ibin );
 
   /// Get PSD Results
   long GetNPulses(){ return fPSD.size(); };

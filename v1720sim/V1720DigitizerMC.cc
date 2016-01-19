@@ -29,14 +29,117 @@ V1720DigitizerMC::V1720DigitizerMC(
   fhLongGate = NULL;
   fPSD.reserve( 10000 );
 
-  verbose = 1;
+  verbose = 0;
+}
+
+
+V1720PSDResult * V1720DigitizerMC::GetPSDforTrigger( TH1D * aInputHisto, int ibin ){
+  if (verbose) std::cout<<"V1720DigitizerMC::GetPSDforTrigger()"<<std::endl;
+  fhInputPulse = aInputHisto;
+
+  MakeSingleBaseHisto();
+
+  // find number of bins for gate values
+  ans = long( fShortGate / fSampRate ); // number of short gate bins
+  anl = long( fLongGate  / fSampRate ); // number of long gate bins
+  ang = long( fGateOff   / fSampRate ); // number of gate offset bins
+  ant = long( fTrigHold  / fSampRate ); // number of trigger holdoff bins
+
+
+  // create a new PSD result
+
+  // short gate is from ibin to ibin + ans - ang
+  // long gate is from ibin to ibin + anl - ang
+  aTime = fhInputPulse->GetBinCenter( ibin );
+  aQS = 0.0;
+  aQL = 0.0;
+  aBL = fhBaseline->GetBinContent(ibin);
+  for (long i=ibin-ang; i<std::min<long>( ibin+anl-ang, fhInputPulse->GetNbinsX() ); i++){
+    cursample =  fhInputPulse->GetBinContent(i) - fhBaseline->GetBinContent(ibin);
+    if ( i < ibin+ans ) aQS += cursample; 
+    aQL += cursample;
+  }
+
+
+  return  (new V1720PSDResult( aTime, aQS, aQL, aBL ));
 }
 
 //====================================================================================
-std::vector< V1720PSDResult > * V1720DigitizerMC::DoPSDAnalysis( TH1D * aInputHisto ){
+void V1720DigitizerMC::MakeSingleBaseHisto(){	
+	
+  if(verbose) std::cout<<"V1720DigitizerMC::MakeBaselineHisto()"<<std::endl;
+
+  // we will clean up the baseline histo if it exists
+  // also cleanup the shortgate and long gate histos
+  if ( fhBaseline != NULL ){
+    // don't delete it, just clear it
+    fhBaseline->Clear();
+    if( fhLongGate != NULL ) fhLongGate->Clear();
+    if (fhShortGate != NULL ) fhShortGate->Clear();
+  } else {
+    // make a new histogram of same length as input histo
+    fhBaseline = new TH1D( "V1720DigitizerMC_fhBaseline","baseline",
+			   fhInputPulse->GetNbinsX(), 
+			   fhInputPulse->GetXaxis()->GetXmin(),
+			   fhInputPulse->GetXaxis()->GetXmax() );
+  }
+
+  // if fBaseline != -9999, baseline value is set in ADC counts
+  if ( fBaseline != -9999){
+    for ( long ibin=1; ibin <= fhInputPulse->GetNbinsX(); ibin++) 
+      fhBaseline->SetBinContent(ibin, fBaseline);
+    return;
+  }
+
+  // loop over input histogram bins and calculate average of last fNBLSample bins as the baseline
+  // keep the baseline fixed for length of trigger holdoff gate 
+  aVals.push_back( fhInputPulse->GetBinContent(1) ); //values used in average
+  asum = aVals[0];
+  iavgd=1;
+  ang = long( fGateOff   / fSampRate ); // number of gate offset bins
+  ant = long( fTrigHold  / fSampRate ); // number of trigger holdoff bins
+  double sample;
+
+  // set baseline
+  for ( long ibin=1; ibin <= fhInputPulse->GetNbinsX(); ibin++){
+    
+    // find current baseline average
+    if (ibin<fNBLSample) abase = asum / float(ibin);
+    else abase = asum / float(fNBLSample);
+
+    // update baseline average and save to histogram
+    sample = fhInputPulse->GetBinContent( ibin );
+    if ( ibin > fNBLSample ) {
+      asum -= aVals[ iavgd%fNBLSample ];
+      aVals[ iavgd%fNBLSample ] = sample;
+    } else  {
+      aVals.push_back(sample );
+    }
+    iavgd++;
+    asum += sample;
+    
+    fhBaseline->SetBinContent( ibin, abase );
+  }
+  if(verbose) std::cout << "baseline " << abase << std::endl;
+  return;
+}
+
+//====================================================================================
+bool V1720DigitizerMC::GoodTrigger( TH1D * aInputHisto, int ibin ) {
+  // find if trigger executes on correct threshold
+  athres = fThreshold / fADCpermV;
+  if (fhInputPulse->GetBinContent(ibin) - fhBaseline->GetBinContent(ibin) > athres) // in mV
+    return true;
+  else
+    return false;
+}
+
+//====================================================================================
+std::vector< V1720PSDResult > * V1720DigitizerMC::DoPSDAnalysis( TH1D * aInputHisto ){ 
   if (verbose) std::cout<<"V1720DigitizerMC::DoPSDAnalysis()"<<std::endl;
+
   fhInputPulse = aInputHisto;
-  MakeBaselineHisto();
+ MakeBaselineHisto();
   fPSD.clear();
 
   // find number of bins for gate values
