@@ -10,11 +10,16 @@
 #include <TTree.h>
 #include <TFile.h>
 
+#include "INIReader.h"
+
 #include "V1720DigitizerMC.h"
 #include "PMTSignal.h"
 
 // Make an instance of the simulation class available globally
 V1720DigitizerMC g1720mc; // use default parameters
+
+
+INIReader gConfig("ucnrate.ini");
 
 // Make a truth tree to keep track of what was added to the wavetrain
 TTree * ttrue;
@@ -85,6 +90,12 @@ TH1D* simwavetrain( double nrate = 1000000.0, double grate = 0.0, double count_t
   sig = new PMTSignal();
   fsig = sig->GetSimpleSignal();
   fsig->SetNpx(4000);
+  sig->SetFallTime( gConfig.GetReal("neutron","fFall",42.0) );
+  sig->SetAmplitude( gConfig.GetReal("neutron","fAmplitude",25.0) );
+  std::cout<<"Neutron Fall Time="<<sig->GetFallTime()<<std::endl;
+  std::cout<<"Neutron Amplitude="<<sig->GetAmplitude()<<std::endl;
+
+
 
   csig = new PMTSignal();
   csig->SetCerenkov(true);
@@ -122,7 +133,8 @@ TH1D* simwavetrain( double nrate = 1000000.0, double grate = 0.0, double count_t
 
   // scint signal pulse height distribution?
   // based on average of 50 p.e. collected per scint
-  double ScintNPEAvg = 74;
+  double ScintNPEAvg = gConfig.GetReal("neutron","Npe",50.0);
+  std::cout<<"ScintNPEAvg = "<<ScintNPEAvg<<std::endl;
 
   // simulate some noise
   double noiselevel = 4.0; // mV
@@ -169,11 +181,12 @@ TH1D* simwavetrain( double nrate = 1000000.0, double grate = 0.0, double count_t
 
   // cerenkov signal pulse height distribution?
   // based on average of 15 p.e. collected per cerenkov
-  double CerenkovNPEAvg = 5;
+  double CerenkovNPEAvg = gConfig.GetReal("gamma","Npe",10.0);
+  std::cout<<"Gamma NPe="<<CerenkovNPEAvg<<std::endl;
 
   // simulate the cerenkov events
   // only do for pulses that are above threshold?
-  adelay = 20.0;
+  adelay = 0.0;
   //tau for gammas
   if ( grate > 0.0 ){
     double taug = 1.0e9 / grate;
@@ -231,21 +244,30 @@ int main( int argc, const char* argv[]){
 
   verbose=true;
 
-  char filename[256];
-  if ( argc != 5 ){
-    std::cout<<"Usage: "<<std::endl;
-    std::cout<<" ucnrate NumRuns scintRate(Hz) cerenkovRate(Hz) totalTime(num 0.1s intervals) \n"<<std::endl;
-    return 0;
+
+  if (gConfig.ParseError() < 0) {
+    std::cout << "Can't load 'ucnrate.ini'\n";
+    return 1;
   }
 
-  int    runNum      = atoi(argv[1]);
-  double scintRate = atof(argv[2]);
-  double cerenkovRate   = atof(argv[3]);
-  double totalTime   = atof(argv[4]);
 
-  sprintf(filename,"ucnrateN%.1fG%.1fT%.1fRun%02d.root",scintRate,cerenkovRate,totalTime/10.0,runNum);
+  //char filename[256];
+  //if ( argc != 5 ){
+  //  std::cout<<"Usage: "<<std::endl;
+  //  std::cout<<" ucnrate NumRuns scintRate(Hz) cerenkovRate(Hz) totalTime(num 0.1s intervals) \n"<<std::endl;
+  //  return 0;
+  // }
+
+  //int    runNum      = atoi(argv[1]);
+  double scintRate    = gConfig.GetReal("simulation","scintrate",10000.0); //kHz //atof(argv[2]);
+  double cerenkovRate = gConfig.GetReal("simulation","gammarate",0.0); //kHz atof(argv[3]);
+  double totalTime    = gConfig.GetReal("simulation","ntimes",1.0); // number of 0.1 s intervals to simulate .... atof(argv[4]);
+
+  //  sprintf(filename,"ucnrateN%.1fG%.1fT%.1fRun%02d.root",scintRate,cerenkovRate,totalTime/10.0,runNum);
+  std::string strfname = gConfig.Get("output","filename","ucnrate.root");
   
-  TFile * fout = new TFile((const char *)filename,"recreate");
+
+  TFile * fout = new TFile((const char *)strfname.c_str(),"recreate");
     
   TTree * tout = new TTree("TPSD","TPSD");
   float tT;
@@ -261,154 +283,206 @@ int main( int argc, const char* argv[]){
   int tMCNn; // number of true neutrons in QL
   float tMCTn[MAXNINGATE];; // times of true neutrons in QL
   float tMCAn[MAXNINGATE];; // amplitudes of true neutrons in QL
+  int tRTRn; // 0 within short gate; 1 retrigger event; 2 neutron within 150ns before current signal; 3 retrigger and neutron w/in 150ns before current
   int tMCNg; // number of true gammas in QL
   float tMCTg[MAXNINGATE]; // times of true gammas in QL
   float tMCAg[MAXNINGATE]; // amplitudes of true gammas in QL
+  int tRTRg; // 0 within short gate; 1 retrigger event; 
   tout->Branch("MCNn",&tMCNn, "MCNn/I");
   tout->Branch("MCTn",tMCTn, "MCTn[MCNn]/F");
   tout->Branch("MCAn",tMCAn, "MCAn[MCNn]/F");
+  tout->Branch("RTRn",&tRTRn, "RTRn/I");
   tout->Branch("MCNg",&tMCNg, "MCNg/I");
   tout->Branch("MCTg",tMCTg, "MCTg[MCNg]/F");
   tout->Branch("MCAg",tMCAg, "MCAg[MCNg]/F");
-
-  ULong64_t ttidxn = 0;
-  ULong64_t ttidxg = 0;
+  tout->Branch("RTRg",&tRTRg, "RTRg/I");
+  ULong64_t ttidxn = 0; // time for finding true neutron
+  ULong64_t ttidxg = 0; // time for finding true gamma
   ULong64_t ttruenmax;
 
 
   //  for(int j=0; j<runNum; j++) {
+  
+  TH1D * hanalog;
+  
+  std::vector< V1720PSDResult > * psd;
+  
+  
+  // Set up digitizer threshold (in adc)
+  g1720mc.SetThreshold( gConfig.GetReal("digitizer","threshold", 250.0) ); // 125.0mV
+  
+  // simulate 10s of data (0.1 sec at a time, so 100 times
+  for (int i=0; i < totalTime; i++){
     
-    TH1D * hanalog;
-    
-    std::vector< V1720PSDResult > * psd;
-    
-
-    // Set up digitizer threshold (in adc)
-    g1720mc.SetThreshold( 250.0 ); // 125.0mV
-
-    // simulate 10s of data (0.1 sec at a time, so 100 times
-    for (int i=0; i < totalTime; i++){
-
+    std::cout<<"  Simulating "<< float(i)*0.1<<" second of "<<totalTime*0.1<<" s"<<std::endl;
+    if(verbose) {
+      std::cout<<"==================================================="<<std::endl;
       std::cout<<"  Simulating "<< float(i)*0.1<<" second of "<<totalTime*0.1<<" s"<<std::endl;
-      if(verbose) {
-	std::cout<<"==================================================="<<std::endl;
-	std::cout<<"  Simulating "<< float(i)*0.1<<" second of "<<totalTime*0.1<<" s"<<std::endl;
-	std::cout<<"==================================================="<<std::endl;
-      }
-      
-      // start with all scints at 1000 kHz 
-      // simulate 0.1 s long wavetrains at a time
-      // takes a lot of memory, so cant do a full 10s at a time
-      std::cout<<"ttree pointer (before simwavetrain) = "<<ttrue<<std::endl;
-      hanalog = simwavetrain( scintRate, cerenkovRate, 0.1, i*0.1, false ); // simulate 0.1 s segment of wavetrain
-
-      if ( i== 0){  //setup counters for searching truth trees
-	ttruenmax = ttrue->GetEntries(); // get length of entries in truth trees
-	for (ULong64_t ii = 0; ii<ttruenmax; ii++){
-	  ttrue->GetEntry(ii);
-	  if ( ttType == 1 ) {
-	    ttidxg = ii;
-	    break;
-	  }
-	}
-      } else {
-	std::cout<<" second call? "<<std::endl;
-	ttidxn = ttruenmax;
-	ttruenmax = ttrue->GetEntries(); // get length of entries in truth trees (now)
-	for (ULong64_t ii = ttidxn; ii<ttruenmax; ii++){
-	  ttrue->GetEntry(ii);
-	  if ( ttType == 1 ) {
-	    ttidxg = ii;
-	    break;
-	  }
+      std::cout<<"==================================================="<<std::endl;
+    }
+    
+    // start with all scints at 1000 kHz 
+    // simulate 0.1 s long wavetrains at a time
+    // takes a lot of memory, so cant do a full 10s at a time
+    std::cout<<"ttree pointer (before simwavetrain) = "<<ttrue<<std::endl;
+    hanalog = simwavetrain( scintRate, cerenkovRate, 0.1, i*0.1, false ); // simulate 0.1 s segment of wavetrain
+    
+    // find inital position of neutron and gamma within truth tree
+    if ( i== 0){  //setup counters for searching truth trees
+      ttruenmax = ttrue->GetEntries(); // get length of entries in truth trees
+      for (ULong64_t ii = 0; ii<ttruenmax; ii++){
+	ttrue->GetEntry(ii);
+	if ( ttType == 1 ) {
+	  ttidxg = ii;
+	  break;
 	}
       }
+    } else {
+      std::cout<<" second call? "<<std::endl;
+      ttidxn = ttruenmax;
+      ttruenmax = ttrue->GetEntries(); // get length of entries in truth trees (now)
+      for (ULong64_t ii = ttidxn; ii<ttruenmax; ii++){
+	ttrue->GetEntry(ii);
+	if ( ttType == 1 ) {
+	  ttidxg = ii;
+	  break;
+	}
+      }
+    }
+    
+    
+    std::cout<<"ttree pointer (after simwavetrain) = "<<ttrue<<std::endl;
 
+    // analyze segment of wavetrain
+    psd     = g1720mc.DoPSDAnalysis( hanalog );             
+    
+    // save segment simulation information to file
+    for (int j=0; j< psd->size(); j++){
 
-      std::cout<<"ttree pointer (after simwavetrain) = "<<ttrue<<std::endl;
-      psd     = g1720mc.DoPSDAnalysis( hanalog );             // analyze segment of wavetrain
+      // get analyzed event in simulated wavetrain
+      p = &(psd->at(j));
+      tT = p->fTime;
+      tQS = p->fQS;
+      tQL = p->fQL;
+      tBL = p->fBL;
       
-      // save segment simulation information to file
-      for (int j=0; j< psd->size(); j++){
-	p = &(psd->at(j));
-	tT = p->fTime;
-	tQS = p->fQS;
-	tQL = p->fQL;
-	tBL = p->fBL;
-
-	// search through the truth tree for the neutrons and gammas
-	// that are within ql
-	tMCNn = 0;
-	tMCNg = 0;
+      // search through the truth tree for the neutrons and gammas
+      // that are within ql
+      tMCNn = 0;
+      tMCNg = 0;
+      
+      // First search for neutrons that are in time with this PSD result
+      //if (ttidxn>0) {
+      ttrue->GetEntry( ttidxn );
+      //if (j%10==0)
+      std::cout<<"nnn PSD pulse "<<j<<" T="<<tT<<"  ttidxn="<<ttidxn<<"/"<<ttruenmax<<" ttT="<<ttT<<std::endl;
 	
-	// First search for neutrons that are in time with this PSD result
+      // check for events from truth tree within charge long gate
+      while ( ttT <  tT+g1720mc.GetLongGate() && ttidxn < ttruenmax ){
+	bool incr=false;
+	
+	// check if selected event is within ideal range of long gate
+	if ( ttT >= tT -10.0 && ttT < tT+g1720mc.GetLongGate()-10.0 ) {
+	  // this true pulse is in this psd result.
+	  if (ttType == 0) {
+
+	    // check for retrig event
+	    // first by searching for the first event in long gate
+	    if ( tMCNn == 0 )
+	      if ( ttT >= tT -10.0 && ttT < tT+g1720mc.GetShortGate()-10.0 )
+		tRTRn = 0; // signal correctly timed
+	      else
+		tRTRn = 1; // first trigger off - retrig event
+		
+	    // add to tally of events within charge long gate
+	    if ( tMCNn < MAXNINGATE ){
+	      tMCTn[ tMCNn ] = ttT;
+	      tMCAn[ tMCNn ] = ttAmp;
+	      tMCNn++;
+	      incr=true;
+	    } 
+
+	  }
+// else {
+	    //   std::cout<<"Ugh... shouldn't find gamma when looking for neutron"<<std::endl; 
+	    // }
+	}
+
+	// check if selected event is within 150ns before current gate
+	if ( ttT >= tT -160.0 && ttT < tT-10.0 ) {
+	  // this true pulse is in this psd result.
+	  if (ttType == 0) { // and its a neutron
+	    tRTRn += 2; // first trigger off - retrig event
+	  }
+	}
+
+	std::cout<<"   ttidxn="<<ttidxn<<" ttT="<<ttT<<" T="<<tT;
+	if (incr==true) std::cout<<" * ";
+	std::cout<<std::endl;
+	  
+	ttidxn++;
 	ttrue->GetEntry( ttidxn );
-	std::cout<<"nnn PSD pulse "<<j<<" T="<<tT<<"  ttidxn="<<ttidxn<<"/"<<ttruenmax<<" ttT="<<ttT<<std::endl;
-	while ( ttT <  tT+g1720mc.GetLongGate() && ttidxn < ttruenmax ){
-	  bool incr=false;
-	  if ( ttT >= tT -10.0 && ttT < tT+g1720mc.GetLongGate()-10.0 ) {
-	    // this true pulse is in this psd result.
-	    if (ttType == 0) {
-	      if ( tMCNn < MAXNINGATE ){
-		tMCTn[ tMCNn ] = ttT;
-		tMCAn[ tMCNn ] = ttAmp;
-		tMCNn++;
-		incr=true;
-	      } 
-	    } else {
-	      std::cout<<"Ugh... shouldn't find gamma when looking for neutron"<<std::endl; 
-	    }
-	  }
-	  std::cout<<"   ttidxn="<<ttidxn<<" ttT="<<ttT<<" T="<<tT;
-	  if (incr==true) std::cout<<" * ";
-	  std::cout<<std::endl;
+      } // end while search for neutrons
+	// }
 
-	  ttidxn++;
-	  ttrue->GetEntry( ttidxn );
+      // now search for gammas that are in time with this PSD result
+      //if(ttidxg > 0) {
+      ttrue->GetEntry( ttidxg );
+      //if (j%10==0)
+      std::cout<<"ggg PSD pulse "<<j<<" T="<<tT<<"  ttidxg="<<ttidxg<<"/"<<ttruenmax<<" ttT="<<ttT<<std::endl;
+	
+      // search for gammas within psd charge long gate
+      while ( ttT <  tT+g1720mc.GetLongGate() && ttidxg < ttruenmax ){
+	bool incr=false;
+	  
+	// 
+	if ( ttT >= tT -10.0 && ttT < tT+g1720mc.GetLongGate()-10.0 ) {
+	  // this true pulse is in this psd result.
+	  if (ttType == 1) {
+
+	    // check for retrig event
+	    // first by searching for the first event in long gate
+	    if ( tMCNg == 0 )
+	      if ( ttT >= tT -10.0 && ttT < tT+g1720mc.GetShortGate()-10.0 )
+		tRTRg = 0; // signal correctly timed
+	      else
+		tRTRg = 1; // first trigger off - retrig event
+
+	    if ( tMCNg < MAXNINGATE ){
+	      tMCTg[ tMCNn ] = ttT;
+	      tMCAg[ tMCNn ] = ttAmp;
+	      tMCNg++;
+	      incr=true;
+	    } 
+	  } // else {
+	    //   std::cout<<"Ugh... shouldn't find neutron when looking for gamma"<<std::endl; 
+	    // }
 	}
-
-	// now search for gammas that are in time with this PSD result
+	  
+	std::cout<<"   ttidxg="<<ttidxg<<" ttT="<<ttT<<" T="<<tT;
+	if (incr==true) std::cout<<" * ";
+	std::cout<<std::endl;
+	  
+	ttidxg++;
 	ttrue->GetEntry( ttidxg );
-	std::cout<<"ggg PSD pulse "<<j<<" T="<<tT<<"  ttidxg="<<ttidxg<<"/"<<ttruenmax<<" ttT="<<ttT<<std::endl;
-	while ( ttT <  tT+g1720mc.GetLongGate() && ttidxg < ttruenmax ){
-	  bool incr=false;
-	  if ( ttT >= tT -10.0 && ttT < tT+g1720mc.GetLongGate()-10.0 ) {
-	    // this true pulse is in this psd result.
-	    if (ttType == 1) {
-	      if ( tMCNg < MAXNINGATE ){
-		tMCTg[ tMCNn ] = ttT;
-		tMCAg[ tMCNn ] = ttAmp;
-		tMCNg++;
-		incr=true;
-	      } 
-	    } else {
-	      std::cout<<"Ugh... shouldn't find neutron when looking for gamma"<<std::endl; 
-	    }
-	  }
+      } // end while search for gammas
+	//}
 
-	  std::cout<<"   ttidxg="<<ttidxg<<" ttT="<<ttT<<" T="<<tT;
-	  if (incr==true) std::cout<<" * ";
-	  std::cout<<std::endl;
-
-	  ttidxg++;
-	  ttrue->GetEntry( ttidxg );
-	}
-
-	tout->Fill();
-      }
-    } // end simulating wavetrain
-    //hanalog->Scale(-1.0);
-    // uncomment below if you want histograms of what parts of the pulses
-    // are used for the short and long gate charge sums
-    TH1D * hshort = g1720mc.GetShortGateHisto();
-    TH1D * hlong = g1720mc.GetLongGateHisto();
-    
-    // write data to file and close
-    fout->Write();
-    //fout->Close();
-    
-    
-    fout->Close();
-    return 0;
+      tout->Fill();
+    } // end analyzing wavetrain
+  } // end simulating wavetrain
+  
+  
+  //hanalog->Scale(-1.0);
+  // uncomment below if you want histograms of what parts of the pulses
+  // are used for the short and long gate charge sums
+  TH1D * hshort = g1720mc.GetShortGateHisto();
+  TH1D * hlong = g1720mc.GetLongGateHisto();
+  
+  // write data to file and close
+  fout->Write();
+  
+  fout->Close();
+  return 0;
 }
 // end main -----------------------------------------------------------

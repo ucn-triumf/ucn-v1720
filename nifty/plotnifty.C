@@ -2,8 +2,8 @@
 const int g_bpsdmin = 16;
 const int g_bpsdmax = 40;
 
-const int g_npdfs = 3;
-const int g_cols[g_npdfs] = { kRed, kGreen+2, kBlue };
+const int g_npdfs = 10;
+const int g_cols[g_npdfs] = { kOrange, kYellow+1, kYellow+3, kSpring-7, kGreen+2, kRed, kPink+8, kViolet+7, kBlue, kCyan+3};
 
 TH2D* g_hpdf[g_npdfs];
 TH2D* g_hdt;
@@ -11,12 +11,16 @@ TH2D* g_hdt;
 
 void plotslicesX(){
 
-  int nbinsy = g_bpsdmax - g_bpsdmin+1;
+  // initialize slice histograms
+  std::cout << "Initialize slice histograms" << std::endl;
+  int nbinsy = g_bpsdmax - g_bpsdmin;
   TH1D** pp[ g_npdfs ];
   for (int j=0; j<g_npdfs; j++ ) pp[j] = new TH1D * [ nbinsy ];
   TH1D** psum = new TH1D * [ nbinsy ];
   TH1D** dd = new TH1D * [ nbinsy ];
 
+  // create canvases for plotting
+  std::cout <<"Create canvases for plotting" << std::endl;
   TCanvas* tcplotx = new TCanvas();
   tcplotx->Divide(4,nbinsy/4,0,0);
 
@@ -31,6 +35,8 @@ void plotslicesX(){
 
   canv->SetBorderMode(1);
 
+  // assemble plots
+  std::cout<<"Assembling sliced plots"<<std::endl;
   char aname[100];
   for (int i=0; i<nbinsy; i++){
     tcplotx->cd(i+1);
@@ -59,13 +65,32 @@ void plotslicesX(){
 	psum[i]->Add( (TH1D*)(pp[j][i]) );
       }
     }
+
+    // plot all slices on one pad
+    // error bars = signal
+    // black = sum of fits
+    // red = signal
+    // orange = background
+    // green = retriggers
+    // blue = pileup
+    std::cout << "plot slice " << i << std::endl;
     sprintf(aname,"dtsliceX%02d",i);
     dd[i] = (TH1D*)g_hdt->ProjectionX(aname,i+g_bpsdmin,i+g_bpsdmin);
-    psum[i]->Draw("hist");
+    dd[i]->SetMarkerStyle(20);
+    dd[i]->SetLineWidth(2);
+    dd[i]->Draw("e1");
     pp[0][i]->Draw("histsame");
     pp[1][i]->Draw("histsame");
     pp[2][i]->Draw("histsame");
-    dd[i]->Draw("e1same");
+    pp[3][i]->Draw("histsame");
+    pp[4][i]->Draw("histsame");
+    pp[5][i]->Draw("histsame");
+    pp[6][i]->Draw("histsame");
+    pp[7][i]->Draw("histsame");
+    pp[8][i]->Draw("histsame");
+    pp[8][i]->Draw("histsame");
+    //pp[10][i]->Draw("histsame");
+    psum[i]->Draw("histsame");
 
     double apsdval = g_hpdf[0]->GetYaxis()->GetBinCenter(i+g_bpsdmin);
     sprintf(aname,"PSD = %4.2f", apsdval);
@@ -74,6 +99,7 @@ void plotslicesX(){
     tl->Draw();
   }
   
+  std::cout << "Done" << std::endl;
   return;
 }
 
@@ -81,18 +107,29 @@ void plotslicesX(){
 
 void plotnifty(){
 
-  TFile * fin=new TFile("nifty.root","read");
+  // open fitted file
+  TFile * fin=new TFile("nifty_00050.root","read");
   
-
-  g_hpdf[0] = (TH2D*)fin->Get("hsig_psdql");     //hpdf[0]->Scale(450000.0);
-  g_hpdf[1] = (TH2D*)fin->Get("hretrig_psdql");  //hpdf[1]->Scale(400000.0);
-  g_hpdf[2] = (TH2D*)fin->Get("hbg_psdql");      //hpdf[2]->Scale(400000.0);
+  // get fit data
+  std::cout << "Get fit data"<< std::endl;
+  g_hpdf[0]  = (TH2D*)fin->Get("hbg_psdql");     
+  g_hpdf[1]  = (TH2D*)fin->Get("hgbg_psdql"); 
+  g_hpdf[2]  = (TH2D*)fin->Get("hgbgpile_psdql");
+  g_hpdf[4]  = (TH2D*)fin->Get("hlate_psdql");     
+  g_hpdf[3]  = (TH2D*)fin->Get("hretrig_psdql"); 
+  g_hpdf[5]  = (TH2D*)fin->Get("hsig_psdql");    
+  g_hpdf[6]  = (TH2D*)fin->Get("hsiggbg_psdql");      
+  g_hpdf[7]  = (TH2D*)fin->Get("hsiggbgpile_psdql");
+  g_hpdf[8]  = (TH2D*)fin->Get("hsigpile_psdql");
+  g_hpdf[9]  = (TH2D*)fin->Get("hsiggbgpile_psdql");
   
   TH1D* hpdfx[g_npdfs];
   TH1D* hpdfy[g_npdfs];
   TH1D* hxsum;
   TH1D* hysum;
   
+  // initialize histogram structures
+  std::cout << "Initializing structures"<< std::endl;
   for (int i=0; i<g_npdfs ; i++){
     hpdfx[i] = (TH1D*)g_hpdf[i]->ProjectionX();
     hpdfx[i]->SetLineColor( g_cols[i] );
@@ -112,26 +149,45 @@ void plotnifty(){
     else hysum->Add( hpdfy[i] );
   }
   
-
+  // get data
+  std::cout << "Get data" << std::endl;
   g_hdt = (TH2D*)fin->Get("hdata");
   TH1D* hdtx = (TH1D*)g_hdt->ProjectionX("hdtx");
   TH1D* hdty = (TH1D*)g_hdt->ProjectionY("hdty");
   
+  // draw the projection along the x axis (QL)
+  std::cout<<"Draw the projection along the x axis (QL)" << std::endl;
   TCanvas *xcan = new TCanvas();
   hdtx->Draw("e1");
   hxsum->Draw("histsame");
   hpdfx[0]->Draw("histsame");
   hpdfx[1]->Draw("histsame");
   hpdfx[2]->Draw("histsame");
+  hpdfx[3]->Draw("histsame");
+  hpdfx[4]->Draw("histsame");
+  hpdfx[5]->Draw("histsame");
+  hpdfx[6]->Draw("histsame");
+  hpdfx[7]->Draw("histsame");
+  hpdfx[8]->Draw("histsame");
+  hpdfx[9]->Draw("histsame");
 
+  // draw the projection along the y axis (PSD)
+  std::cout<<"Draw the projection along the y axis (PSD)" << std::endl;
   TCanvas *ycan = new TCanvas();
   hdty->Draw("e1");
   hysum->Draw("histsame");
   hpdfy[0]->Draw("histsame");
   hpdfy[1]->Draw("histsame");
   hpdfy[2]->Draw("histsame");
+  hpdfy[3]->Draw("histsame");
+  hpdfy[4]->Draw("histsame");
+  hpdfy[5]->Draw("histsame");
+  hpdfy[6]->Draw("histsame");
+  hpdfy[7]->Draw("histsame");
+  hpdfy[8]->Draw("histsame");
+  hpdfy[9]->Draw("histsame");
 
-
+  // plot slices of the projection along the x axis (QL)
   plotslicesX( );
 
 

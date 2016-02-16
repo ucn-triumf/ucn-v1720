@@ -6,8 +6,8 @@ ROOTLIBS      = `root-config --libs` -lMinuit
 LIBS          = $(ROOTLIBS) -lm
 LIBSALL       = $(ROOTLIBS) -lXm -lXt -lX11 -lm -lPW -lcurses
 
-ucnrate:  ucnrate.o V1720DigitizerMC.o PMTSignal.o
-	$(LD) $(LDFLAGS) ucnrate.o V1720DigitizerMC.o PMTSignal.o $(LIBS) -o ucnrate $(LIBS)
+ucnrate:  ucnrate.o V1720DigitizerMC.o PMTSignal.o INIReader.o ini.o
+	$(LD) $(LDFLAGS) ucnrate.o V1720DigitizerMC.o PMTSignal.o INIReader.o ini.o $(LIBS) -o ucnrate $(LIBS)
 
 singleEvent:  singleEvent.o V1720DigitizerMC.o PMTSignal.o
 	$(LD) $(LDFLAGS) singleEvent.o V1720DigitizerMC.o PMTSignal.o $(LIBS) -o singleEvent $(LIBS)
@@ -15,6 +15,9 @@ singleEvent:  singleEvent.o V1720DigitizerMC.o PMTSignal.o
 	$(CXX) $(CXXFLAGS) -c $<
 
 .cc.o:
+	$(CXX) $(CXXFLAGS) -c $<
+
+.c.o:
 	$(CXX) $(CXXFLAGS) -c $<
 
 clean:

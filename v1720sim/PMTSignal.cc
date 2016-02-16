@@ -115,7 +115,7 @@ TF1* PMTSignal::GetSignal( int aNPhotons ) {
     fPhoton[i]->SetParameter(1, fSimpleSignal->GetRandom());
     do {
       curamp = gRandom->Gaus( fAmplitude, fAmplitude );
-    } while (curamp<5.0);
+    } while (curamp<4.0);
     fPhoton[i]->SetParameter(0, curamp);
   }
   //fSignal->SetNpx(4000);

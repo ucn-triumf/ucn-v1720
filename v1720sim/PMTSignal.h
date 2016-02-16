@@ -28,7 +28,7 @@ class PMTSignal {
   PMTSignal(){
     fIsCerenkov = false;
     fBaseline  = 0.0;   // mV (not used currently)
-    fAmplitude = 25.0; // mV of single p.e. assume 100% uncertainty with 5mV thres.
+    fAmplitude = 20.0; // mV of single p.e. assume 100% uncertainty with 5mV thres.
     fTime      = 0.0;   // ns
     fFall      = 41.752;  // ns
     fRise      = 6.4;   // ns
