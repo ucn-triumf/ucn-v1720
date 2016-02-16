@@ -6,9 +6,16 @@ ROOTLIBS      = `root-config --libs` -lMinuit
 LIBS          = $(ROOTLIBS) -lm
 LIBSALL       = $(ROOTLIBS) -lXm -lXt -lX11 -lm -lPW 
 
-ucnrate:  nifty.o
-	$(LD) $(LDFLAGS) nifty.o $(LIBS) -o nifty $(LIBS)
+all: ucnrate dataforfit makepdfs
 
+ucnrate:  nifty.o INIReader.o ini.o
+	$(LD) $(LDFLAGS) nifty.o INIReader.o ini.o $(LIBS) -o nifty $(LIBS)
+
+dataforfit: dataforfit.o INIReader.o ini.o
+	$(LD) $(LDFLAGS) dataforfit.o INIReader.o ini.o $(LIBS) -o dataforfit $(LIBS)
+
+makepdfs: makepdfs.o INIReader.o ini.o
+	$(LD) $(LDFLAGS) makepdfs.o INIReader.o ini.o $(LIBS) -o makepdfs $(LIBS)
 .C.o:
 	$(CXX) $(CXXFLAGS) -c $<
 
@@ -17,3 +24,5 @@ ucnrate:  nifty.o
 
 clean:
 	rm *.o ucnrate
+	rm *.o dataforfit
+	rm *.o makepdfs
