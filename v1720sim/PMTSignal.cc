@@ -110,6 +110,11 @@ void PMTSignal::Init(){
 // method
 TF1* PMTSignal::GetSignal( int aNPhotons ) {
   fNPhotons = aNPhotons;
+  if ( fIsSimple ){
+    fSimpleSignal->SetParameter(0, aNPhotons * fAmplitude );
+    return fSimpleSignal;
+  }
+
   double curamp;
   for(int i=0; i<aNPhotons; i++) {
     fPhoton[i]->SetParameter(1, fSimpleSignal->GetRandom());

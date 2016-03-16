@@ -1,5 +1,6 @@
 
 #include <iostream>
+#include <cmath>
 #include "V1720DigitizerMC.h"
 
 //====================================================================================
@@ -22,6 +23,7 @@ V1720DigitizerMC::V1720DigitizerMC(
   fBaseline  =  aBaseline;
   fTrigHold  =  aTrigHold;
   fGateOff   =  aGateOff;
+  fQSens = 0;
 
   // initialize storage
   fhBaseline = NULL;
@@ -54,14 +56,17 @@ V1720PSDResult * V1720DigitizerMC::GetPSDforTrigger( TH1D * aInputHisto, int ibi
   aQS = 0.0;
   aQL = 0.0;
   aBL = fhBaseline->GetBinContent(ibin);
+  aPH = fhInputPulse->GetBinContent( ibin ) - fhBaseline->GetBinContent(ibin);
   for (long i=ibin-ang; i<std::min<long>( ibin+anl-ang, fhInputPulse->GetNbinsX() ); i++){
     cursample =  fhInputPulse->GetBinContent(i) - fhBaseline->GetBinContent(ibin);
+    cursample /= std::pow( 2.0, fQSens );
     if ( i < ibin+ans ) aQS += cursample; 
     aQL += cursample;
+    if ( cursample > aPH ) aPH = cursample;
   }
 
 
-  return  (new V1720PSDResult( aTime, aQS, aQL, aBL ));
+  return  (new V1720PSDResult( aTime, aQS, aQL, aBL, aPH ));
 }
 
 //====================================================================================
@@ -165,6 +170,7 @@ std::vector< V1720PSDResult > * V1720DigitizerMC::DoPSDAnalysis( TH1D * aInputHi
     if ( cursample > athres ){
 
       // create a new PSD result
+      cursample /= std::pow( 2.0, fQSens );
 
       // short gate is from ibin to ibin + ans - ang
       // long gate is from ibin to ibin + anl - ang
@@ -172,18 +178,22 @@ std::vector< V1720PSDResult > * V1720DigitizerMC::DoPSDAnalysis( TH1D * aInputHi
       aQS = 0.0;
       aQL = 0.0;
       aBL = fhBaseline->GetBinContent(ibin);
+      aPH =  cursample;
       for (long i=ibin-ang; i<std::min<long>( ibin+anl-ang, fhInputPulse->GetNbinsX() ); i++){
 	//cursample =  ( fhBaseline->GetBinContent(i)- fhInputPulse->GetBinContent(i)) * fADCpermV;
 	cursample =  fhInputPulse->GetBinContent(i) - fhBaseline->GetBinContent(i);
+	cursample /= std::pow( 2.0, fQSens );
+	
 	if ( i < ibin+ans ) aQS += cursample; 
 	aQL += cursample;
 
+	if ( cursample > aPH ) aPH = cursample;
 	// std::cout << "bin " << i 
 	// 	  << " current sample " << cursample  
 	// 	  << " baseline " << aBL 
 	// 	  << std::endl;
       }
-      fPSD.push_back( V1720PSDResult( aTime, aQS, aQL, aBL ) );
+      fPSD.push_back( V1720PSDResult( aTime, aQS, aQL, aBL, aPH ) );
       ibin+=ant;
     }
     ibin ++;          

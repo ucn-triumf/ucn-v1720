@@ -5,16 +5,19 @@
 #include <vector>
 #include <TH1D.h>
 
+const double DBASELINEDQL = -0.00188386;
+
 
 /// V1720PSDResult
 /// Class to store results for a single PSD pulse
 class V1720PSDResult {
  public:
-  V1720PSDResult( double aTime, double aQS, double aQL, double aBL ){
+  V1720PSDResult( double aTime, double aQS, double aQL, double aBL, double aPH ){
     fTime = aTime;
     fQS   = aQS;
     fQL   = aQL;
     fBL   = aBL;
+    fPH   = aPH;
     return;
   }
 
@@ -22,6 +25,7 @@ class V1720PSDResult {
   float fQS;   //< Pulse short gate integrated charge (ADC)
   float fQL;   //< Pulse long gate integrated charge (ADC)
   float fBL;   //< Pulse baseline (ADC)
+  float fPH;   //< Pulse height (ADC)
 };
 
 
@@ -48,6 +52,7 @@ class V1720DigitizerMC {
   int    fBaseline;  //< Baseline (-9999= use number of samples, otherwise value is baseline in ADC counts)
   double fTrigHold;  //< Trigger Holdoff (ns) to discount double events
   double fGateOff;   //< Gate Offset (ns) to align short/long gates before trigger signal
+  int    fQSens; //< Charge sensitivity
 
   // variables used in PSD analysis
   long ans;         //< number of short gate bins
@@ -61,6 +66,7 @@ class V1720DigitizerMC {
   double aQS;       //< charge of short gate
   double aQL;       //< charge of long gate
   double aBL;       //< charge of baseline
+  double aPH;       //< charge of pulse peak
 
   // variables used in baseline calculation
   std::vector<double> aVals; //values used in average
@@ -114,6 +120,11 @@ class V1720DigitizerMC {
   void SetBaseline ( int aBaseline )    { fBaseline  = aBaseline;  };
   void SetTrigHold ( double aTrigHold ) { fTrigHold  = aTrigHold;  };
   void SetGateOff  ( double aGateOff )  { fGateOff   = aGateOff;   };
+  void SetQSens    ( int aQSens )       { fQSens     = aQSens;   
+    std::cout<<"Charge sensitivity = "<<fQSens
+	     <<" dividing by "<<std::pow(2.0,fQSens) 
+	     <<std::endl;
+      };
 
   // Getters
   double GetSampRate()     { return fSampRate;  };

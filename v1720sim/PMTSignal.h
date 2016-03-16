@@ -27,6 +27,7 @@ class PMTSignal {
   // constructor
   PMTSignal(){
     fIsCerenkov = false;
+    fIsSimple  = false;
     fBaseline  = 0.0;   // mV (not used currently)
     fAmplitude = 20.0; // mV of single p.e. assume 100% uncertainty with 5mV thres.
     fTime      = 0.0;   // ns
@@ -51,6 +52,7 @@ class PMTSignal {
     fRise=aRise;
     fLongFrac=aLongFrac;
     fLong=aLong;
+    fIsSimple = false;
     fSimpleSignal = NULL;
     fSignal = NULL;
     fPhoton[0] = NULL;
@@ -79,6 +81,8 @@ class PMTSignal {
   // uses the fTime, fRiseTime parameters.
   void SetCerenkov( bool iscerenkov=false){ fIsCerenkov = iscerenkov; Init(); }
 
+  void SetSimple ( bool issimple=false ){ fIsSimple = issimple;  }
+
   // Noisy signal
   //void SetWidth ( double aWidth ) { fWidth = aWidth; };
   //void SetMean  ( double aMean )  { fMean = aMean; };
@@ -102,6 +106,9 @@ class PMTSignal {
   // flag to set this as a cerenkov signal
   // otherwise assume that it is a scintillation.
   bool   fIsCerenkov;
+
+  // flag to set if we use simple gaussian signal, or sum of pes
+  bool   fIsSimple;
 
   // signal parameters
   double fBaseline;    // baseline for signal (mV)

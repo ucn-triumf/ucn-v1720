@@ -91,11 +91,14 @@ TH1D* simwavetrain( double nrate = 1000000.0, double grate = 0.0, double count_t
   fsig = sig->GetSimpleSignal();
   fsig->SetNpx(4000);
   sig->SetFallTime( gConfig.GetReal("neutron","fFall",42.0) );
+  sig->SetRiseTime( gConfig.GetReal("neutron","fRise",6.4) );
+  sig->SetCerenkov( gConfig.GetInteger("neutron","fIsCherenkov",0) );
   sig->SetAmplitude( gConfig.GetReal("neutron","fAmplitude",25.0) );
+  sig->SetSimple( gConfig.GetInteger("neutron","fSimple", 0) );
   std::cout<<"Neutron Fall Time="<<sig->GetFallTime()<<std::endl;
   std::cout<<"Neutron Amplitude="<<sig->GetAmplitude()<<std::endl;
 
-
+  
 
   csig = new PMTSignal();
   csig->SetCerenkov(true);
@@ -265,7 +268,12 @@ int main( int argc, const char* argv[]){
 
   //  sprintf(filename,"ucnrateN%.1fG%.1fT%.1fRun%02d.root",scintRate,cerenkovRate,totalTime/10.0,runNum);
   std::string strfname = gConfig.Get("output","filename","ucnrate.root");
-  
+
+
+  g1720mc.SetShortGate( gConfig.GetReal("digitizer","shortgate", 40.0 ) );
+  g1720mc.SetLongGate( gConfig.GetReal("digitizer","longgate", 200.0 ) );
+  g1720mc.SetTrigHold( gConfig.GetReal("digitizer","holdoff", 350.0 ) );
+  g1720mc.SetQSens( gConfig.GetInteger("digitizer","qsens", 0 ) );
 
   TFile * fout = new TFile((const char *)strfname.c_str(),"recreate");
     
@@ -274,10 +282,12 @@ int main( int argc, const char* argv[]){
   float tQS;
   float tQL;
   float tBL;
+  float tPH;
   tout->Branch("T", &tT, "T/F");
   tout->Branch("QS",&tQS,"QS/F");
   tout->Branch("QL",&tQL,"QL/F");
   tout->Branch("BL",&tBL,"BL/F");
+  tout->Branch("PH",&tPH,"PH/F");
   
   const int MAXNINGATE=5;
   int tMCNn; // number of true neutrons in QL
@@ -365,6 +375,7 @@ int main( int argc, const char* argv[]){
       tQS = p->fQS;
       tQL = p->fQL;
       tBL = p->fBL;
+      tPH = p->fPH;
       
       // search through the truth tree for the neutrons and gammas
       // that are within ql
