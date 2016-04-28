@@ -1,0 +1,18 @@
+\BOOKMARK [1][-]{section.1}{Introduction}{}% 1
+\BOOKMARK [1][-]{section.2}{Overview of Detector Technology}{}% 2
+\BOOKMARK [2][-]{subsection.2.1}{Cascade Detector}{section.2}% 3
+\BOOKMARK [2][-]{subsection.2.2}{6Li Scintillating Glass Detector}{section.2}% 4
+\BOOKMARK [2][-]{subsection.2.3}{Overview of the Measurement Method}{section.2}% 5
+\BOOKMARK [1][-]{section.3}{ Relative rate comparison }{}% 6
+\BOOKMARK [1][-]{section.4}{Calculating the number of pile-up and dead-time events}{}% 7
+\BOOKMARK [2][-]{subsection.4.1}{Calculating the rates based on random Poisson processes}{section.4}% 8
+\BOOKMARK [2][-]{subsection.4.2}{Calculations to test the rate equations}{section.4}% 9
+\BOOKMARK [1][-]{section.5}{ Scintillation and light-guide background simulation }{}% 10
+\BOOKMARK [2][-]{subsection.5.1}{ Digitizer simulation }{section.5}% 11
+\BOOKMARK [2][-]{subsection.5.2}{ Probability distribution functions from the simulations }{section.5}% 12
+\BOOKMARK [1][-]{section.6}{Estimate of the absolute detector efficiency and background contamination}{}% 13
+\BOOKMARK [2][-]{subsection.6.1}{ Detector effective area }{section.6}% 14
+\BOOKMARK [2][-]{subsection.6.2}{ Estimation of UCN absorption in Li depleted layer }{section.6}% 15
+\BOOKMARK [2][-]{subsection.6.3}{ PSD cut efficiency and background rejection}{section.6}% 16
+\BOOKMARK [2][-]{subsection.6.4}{Overall Detector Efficiency Estimate}{section.6}% 17
+\BOOKMARK [1][-]{section.7}{Conclusion}{}% 18
