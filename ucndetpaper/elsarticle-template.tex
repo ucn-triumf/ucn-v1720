@@ -1,7 +1,9 @@
 %\documentclass[review]{elsarticle}
-\documentclass[letter,twocolumn,preprint,3p]{elsarticle}
+\documentclass[letter,twocolumn,preprint,3p,numbers,sort&compress]{elsarticle}
 
-\usepackage{lineno,hyperref}
+\usepackage{lineno}
+%\usepackage{cite}
+%\usepackage[numbers,sort&compress]{natbib}
 %\modulolinenumbers[5]
 
 %\journal{Journal of \LaTeX\ Templates}
@@ -35,7 +37,7 @@
 %\usepackage{numcompress}\bibliographystyle{model6-num-names}
 
 %% `Elsevier LaTeX' style
-%\bibliographystyle{elsarticle-num}
+%\usepackage{numcompress}\bibliographystyle{elsarticle-num}
 \bibliographystyle{unsrt}
 %%%%%%%%%%%%%%%%%%%%%%%
 
@@ -70,7 +72,7 @@
   Portage Avenue, Winnipeg, MB, Canada.}
 
 \address[aPSI]{Laboratory for Particle Physics, Paul Scherrer
-  Institut, CH5232 Villigen PSI, Switzerland.}
+  Institute, CH5232 Villigen PSI, Switzerland.}
 
 \address[aTRIUMF]{TRIUMF, 4004 Wesbrook Mall, Vancouver, BC, Canada. } 
 
@@ -117,19 +119,20 @@ Determining the neutron Electric Dipole Moment (nEDM) limits theories
 beyond the Standard Model \cite{pospelov}.  Ultra-Cold Neutrons (UCN)
 provide a good means to determine the nEDM.  As a result, there are
 various nEDM experiments around the world utilizing UCN that are
-either running or being planned \cite{fillipone,PSI,Gatchina,
-  APSerebov, KKirch, CABaker, YMasuda, IAltarev, RGolub, SNS}.
-Measurements of the nEDM are limited mainly by the number of UCN
-produced.  Increasing the efficiency of the detection system is
-therefore important.
+either running or being planned
+\cite{fillipone,PSI,Gatchina,APSerebov,KKirch,CABaker,YMasuda,IAltarev,RGolub,SNS}.
+Measurements of the nEDM are limited mainly by UCN statistics.
+Increasing the efficiency of the detection system is therefore
+important.
 
 The UCN source at the Research Centre for Nuclear Physics (RCNP) in
 Osaka successfully demonstrated UCN production in super-fluid helium
-and extraction through cold windows in 2013.  This source is in the
-process of being moved from RCNP to TRIUMF, in Vancouver, over the
-coming year where a new UCN facility is being prepared.  A neutron
-Electric Dipole Moment (nEDM) experiment is planned as the first
-experiment after the source will be installed at TRIUMF.
+and extraction through cold windows in 2013\cite{kawasaki2014}.  This
+source is in the process of being moved from RCNP to TRIUMF, in
+Vancouver, over the coming year where a new UCN facility is being
+prepared.  A neutron Electric Dipole Moment (nEDM) experiment is
+planned as the first experiment after the source will be installed at
+TRIUMF\cite{jeffucn}.
 
 A UCN detector using $^6$Li glass has been designed and built for the
 nEDM experiment.  This detector must fulfill several performance
@@ -138,25 +141,25 @@ rates ( $>$~1~MHz).  In order to determine the detector's performance,
 the detector has been bench-marked against a Cascade UCN
 detector\footnote{1CD-T Technology, Hans-Bunte Strasse 8-10, 69123
   Heidelberg, Germany} using the UCN source at the Paul Scherrer
-Institut (PSI) in Switzerland~\cite{BLaussAIP2012, BLaussHFI2012,
+Institute (PSI) in Switzerland~\cite{BLaussAIP2012, BLaussHFI2012,
   BLaussPP2014}.
 
-This paper will describe the $^{6}$Li based scintillation detector and
-Cascade UCN detector in Section~\ref{sec:overview}.  One goal of the
-tests is to estimate the overall detection efficiency and background
-rejection capabilities of the $^{6}$Li detector.  In order to
-understand the efficiency and background rejection due to Pulse Shape
-Discrimination (PSD) used to reject backgrounds for the $^{6}$Li
-detector, a simulation of the UCN detection and background detection
-with the $^{6}$Li detector was prepared, as described in
-Section~\ref{sec:sim}.  To get an estimate of the absolute detector
-efficiency, described in Section~\ref{sec:eff}, we have taken account
-of the PSD cut efficiency, along with estimates of the geometrical
-acceptance, and neutrons lost to the lithium depleted layer of glass
-on top of the detector.  A comparison of the detector measurement to a
-Cascade UCN detector is described in Section~\ref{sec:relative}.  As
-the detectors reach higher detection rates, the effects of pile-up and
-electronics dead-time need to be estimated, as detailed in~\ref{sec:stats}.
+This paper will describe the $^{6}$Li based scintillation detector in
+Section~\ref{sec:overview}.  One goal of the tests is to estimate the
+overall detection efficiency and background rejection capabilities of
+the $^{6}$Li detector.  In order to understand the efficiency and
+background rejection due to Pulse Shape Discrimination (PSD) used to
+reject backgrounds for the $^{6}$Li detector, a simulation of the UCN
+detection and background detection with the $^{6}$Li detector was
+prepared, as described in Section~\ref{sec:sim}.  To get an estimate
+of the absolute detector efficiency, described in
+Section~\ref{sec:eff}, we have taken account of the PSD cut
+efficiency, along with estimates of the geometrical acceptance, and
+neutrons lost to the lithium depleted layer of glass on top of the
+detector.  A comparison of the detector measurement to a Cascade UCN
+detector is described in Section~\ref{sec:relative}.  As the detectors
+reach higher detection rates, the effects of pile-up and electronics
+dead-time need to be estimated, as detailed in~\ref{sec:stats}.
 
 \section{Overview of Detector Technology}\label{sec:overview}
 
@@ -169,18 +172,18 @@ The scintillating glass is doped with $^6$Li, which has a high neutron
 capture cross-section of order $10^5$~b.  The charged particles in the
 reaction:
 \begin{equation}
-^6{\rm Li} + n \rightarrow \alpha (2.05\ {\tt MeV}) + ^{3}{\rm He} (2.73\ {\tt MeV})
+^6{\rm Li} + n \rightarrow \alpha (2.05\ {\tt MeV}) + {\rm t} (2.73\ {\tt MeV})
 \end{equation}
 are detected. 
 
 In order to reduce the effect of an $\alpha$ or triton escaping the
 glass, two optically-bonded pieces of scintillating glass are used.
 This type of scintillating stack detector was pioneered by the group
-at LPSC Caen\cite{ban, ban05, afach}. The upper layer is depleted of
+at LPC Caen\cite{ban, ban05, afach, gban2016}. The upper layer is depleted of
 $^6$Li (GS30) and the lower layer is doped with $^6$Li (GS20) to allow
 the resultant particles to deposit their full energy within the
 scintillating glass\footnote{GS20 and GS30 were purchased from Applied
-  Scintillation Technologies, now Scintactor, 8 Roydonbury Industrial
+  Scintillation Technologies, now Scintacor, 8 Roydonbury Industrial
   Estate, Horsecroft Road, Harlow, CM19 5BZ, United Kingdom}.  Optical
 contacting of the two layers was performed by Thales-Seso in France,
 and a method of checking the doped side of the glass was developed at
@@ -194,14 +197,15 @@ a slower decaying light component up to 2~$\mu$s.
 The detector design is similar to the detector developed for the nEDM
 experiment at PSI, and also employed at PSI for UCN
 monitoring\cite{LGoeltl}.  These detectors have some sensitivity to
-gamma-ray and thermal neutron backgrounds, as will be discussed in
-detail in this paper.  Making the scintillating Li glass as thin as
-possible reduces this sensitivity to both thermal neutron captures and
-to $\gamma$-ray backgrounds.  Thinner than about $50$~$\mu$m would
-also result in an efficiency loss as the charged particles produced in
-the neutron capture could begin to escape the glass before stopping.
-In addition, the gamma rays producing scintillation light or via
-Cerenkov effect in the light-guides can be rejected by Pulse-Shape
+gamma-ray and thermal neutron backgrounds.  Background contamination
+will be discussed further in the paper in sections \ref{sec:digisim}
+and \ref{sec:bgreject}.  Making the scintillating Li glass as thin as possible
+reduces this sensitivity to both thermal neutron captures and to
+$\gamma$-ray backgrounds.  Thinner than about $50$~$\mu$m would also
+result in an efficiency loss as the charged particles produced in the
+neutron capture could begin to escape the glass before stopping.  In
+addition, the gamma rays producing scintillation light or via Cerenkov
+effect in the light-guides can be rejected by Pulse-Shape
 Discrimination (PSD) since these signals do not have a slow decaying
 component and are therefore shorter (FWHM approx. 20~ns) than the
 scintillation signal from the lithium glass.
@@ -209,31 +213,36 @@ scintillation signal from the lithium glass.
 In order to handle the expected high UCN rates, the $^6$Li detector
 face is segmented into 9 channels.  This reduces pile-up.  A
 photograph and a drawing of the detector are show in Figure
-\ref{fig:detdesigned}.  The ${^6}$Li glass pixel side lengths of
-29~mm, and opening on the adapter flange of 81~mm on the front face of
-the photograph can be used as a reference scale for the detector size.
+\ref{fig:detdesigned}.  The entire enclosure was machined from Al, and
+an adapter flange which has a rim which see UCN was coated with
+natural abundance Ni.  The ${^6}$Li glass tile side lengths of 29~mm,
+and opening on the adapter flange of 81~mm on the front face of the
+photograph can be used as a reference scale for the detector size.
 
 \begin{figure}[!htpb] 
 \includegraphics[width=0.49\textwidth]{figures/detdesigned.png} 
 \includegraphics[width=0.49\textwidth]{figures/ucndet.png} 
 \caption{\label{fig:detdesigned} Three dimensional drawing of the UCN
-  detector and enclosure (top), and a photo of the detector (bottom).}
+  detector and enclosure (top), and a photo of the detector (bottom).
+  The detector enclosure is made of Al, and the rim of the adapter
+  flange which sees UCN is coated with $1$~$\mu$m Ni by thermal
+  evaporation.}
 \end{figure} 
 
 \subsection{$^6$Li Detector Signal Treatment}
 
-Each of the nine pixels of scintillating glass' light is detected by a
+Each of the nine tiles of scintillating glass's light is detected by a
 Hamamatsu R7600U Photomultiplier Tube (PMT).  The signals from the
 PMTs are amplified by a Phillips 775 Octal $10\times$ Preamplifier and
-read out by a CAEN v1720 digitizer.
+read out by a CAEN V1720 digitizer.
 
-The CAEN v1720 has a PSD firmware to reduce the size of the data read
-out, and has eight channels.  The first seven pixels of the detector
-are read out on one digitizer, and two pixels, including the centre
-pixel, are read out on a second digitizer.  Each of the digitizers was
+The CAEN V1720 has a PSD firmware to reduce the size of the data read
+out, and has eight channels.  The first seven tiles of the detector
+are read out on one digitizer, and two tiles, including the centre
+tile, are read out on a second digitizer.  Each of the digitizers was
 connected by an independent optical fibre to a CAEN A3818 PCI card on
-the DAQ computer for readout, allowing data rates up to 60~MB/s per
-link.
+the Data Acquisition (DAQ) computer for readout, allowing data rates
+up to 85~MB/s.
 
 The time-stamp provided by the digitizer is a clock cycle count in 4 ns
 ticks up to 17 seconds.  To help keep track of the time-stamp
@@ -243,10 +252,9 @@ addition a signal from the PSI proton beam timing was sent into one of
 the channels of the detector to be used to determine the times when
 the proton beam arrived.
 
-The Data Acquisition (DAQ) software used the MIDAS system that is
-commonly used at PSI and TRIUMF.  A MIDAS frontend for the CAEN v1720
-was written to collect the PSD data from the digitizers and save it
-into MIDAS banks. 
+The DAQ software used the MIDAS system that is commonly used at PSI
+and TRIUMF.  A MIDAS frontend for the CAEN V1720 was written to
+collect the PSD data from the digitizers and save it into MIDAS banks.
 
 Further details on the digitizer PSD settings can be found in
 Section~\ref{sec:digisim}.  
@@ -258,13 +266,13 @@ In order to build probability distribution functions for late light
 events, multiple signal events, and combinations of signal and
 background events, a detailed simulation of the voltage pulses from
 the lithium glass and of the digitizer PSD was developed.  A single
-photo-electron was assumed to produce a Gaussian pulse with an
-amplitude drawn from a Gaussian with mean and width, $A=20$~mV, and
-accepting only amplitudes above 4~mV.
+photo-electron (p.e.) was assumed to produce a Gaussian pulse with an
+amplitude drawn from a Gaussian with mean and width, $A=20$~mV, with a
+minimum amplitude for a single p.e. as 4~mV.
 
 A single scintillation signal event's pulse was then built assuming
 that the arrival times of each photo-electron from the scintillation
-signal followed some rise time, $\tau_R=6.4$~ns, a fast scintillation
+signal followed a rise time, $\tau_R=6.4$~ns, a fast scintillation
 fall time, $\tau_F=41.7$~ns, and a slow scintillation fall time,
 $\tau_S=2000$~ns.  The probability, $P(t)$, of having a photo-electron
 at a given time, $t$, when the scintillation light starts arriving at
@@ -282,9 +290,10 @@ The fraction of the scintillation light in the late light was
 $f_L=1$\%.  All of the values used in the simulation, as described
 above, were chosen to best match the data.  The number of
 photo-electrons for a single neutron event was drawn from a Poisson
-distribution with mean number of photo-electrons of 83.  The
-distribution of scintillation photo-electron arrival times along with
-a sample pulse is shown in the left panel of Fig.~\ref{fig:signalpdf}.
+distribution with a mean number of photo-electrons of 83 to match the
+mean over sigma of the $Q_L$ distribution from data.  The distribution
+of scintillation photo-electron arrival times along with a sample
+pulse is shown in the left panel of Fig.~\ref{fig:signalpdf}.
 
 \begin{figure}[!htpb]
 \centering
@@ -292,7 +301,7 @@ a sample pulse is shown in the left panel of Fig.~\ref{fig:signalpdf}.
 \includegraphics[width=0.49\textwidth]{figures/digisimexample.pdf}
 \caption{ Simulated scintillation signal (blue dashed) and
   distribution function used to generate it (red solid) is shown in
-  the left panel.  The right panel shows the digitizer treatment of
+  the top panel.  The bottom panel shows the digitizer treatment of
   another simulated signal (solid line), where the baseline
   calculation (red dot-dashed line), signal within the short gate
   (green right-diagonal fill) and signal within the long gate (magenta
@@ -321,9 +330,9 @@ every 4~ns, and for each sample digitizes the voltage on a $\pm 1$~V
 scale into an ADC value between 0 and 4096.  Each channel of the
 digitizer can trigger on its signal based on going some number of ADC
 counts below a pedestal value.  In the simulation the threshold was
-set at 250 ADC ($\sim 125$~mV).  The digitizer can be be run with a
-fixed pedestal, or simpler to set up, a pedestal taken from an average
-over the last 32 samples.  This self calculated pedestal is called a
+set at 250 ADC ($\sim 125$~mV).  The digitizer can be run with a fixed
+pedestal, or a pedestal taken from an average over the last 32 samples
+which is simpler to set up.  This self calculated pedestal is called a
 baseline in the digitizer documentation, and once a trigger happens,
 the baseline is held constant until the end of a specified gate time.
 
@@ -331,7 +340,7 @@ The PSD firmware calculates the sum of the signal below the threshold
 for a short gate width, $t_s=40$~ns, and for a long gate width,
 $t_L=200$~ns, after the trigger.  The ADC sum below threshold within
 the short gate is called, $Q_S$, and the sum within the long gate is
-called, $Q_S$.  The PSD value is also calculated, and defined as:
+called, $Q_L$.  The PSD value is also calculated, and defined as:
 \begin{equation}
 {\tt PSD} = \frac{ (Q_L - Q_S)} { Q_L }.
 \end{equation}
@@ -339,12 +348,16 @@ After each trigger, the digitizer channel is busy for a 150~ns
 dead-time.  An example of the signal within each of the gates is
 depicted in the right panel of Fig.~\ref{fig:signalpdf}.  A cut on the
 values of the charges $Q_L$ and PSD provides a rejection of gamma
-interactions with the lighguides.
+interactions with the lightguides.
 
-As outlined in the section describing the rates seven categories of
-events are considered.  Simulated electronic pulses for each of these
-possible combinations is shown in Fig.~\ref{fig:eventTypes} and
-Fig.~\ref{fig:eventTypes2}.
+Seven categories of events are considered: single neutrons (1n), and
+single backgrounds (1$\gamma$), pile-up of multiple signal neutrons
+(Nn), pile-up of multiple backgrounds (N$\gamma$), pile-up of a single
+neutron with a background (1n1$\gamma$), signal neutrons which happen
+during the digitizer dead-time (1n deadtime), and re-triggers on late
+light from the scintillator (0n0$\gamma$).  Simulated electronic
+pulses for each of these possible combinations are shown in
+Fig.~\ref{fig:eventTypes} and Fig.~\ref{fig:eventTypes2}.
 
 \begin{figure}[!htpb]
 \centering
@@ -378,9 +391,9 @@ Fig.~\ref{fig:eventTypes2}.
 \subsection{ Probability distribution functions from the simulations }
 
 The combination of the signal and background pulse simulations with
-the digitizer simulation is used to generate probability distribution
-functions in the PSD versus $Q_L$ space for each of the different
-possible combinations of events.
+the digitizer simulation is used to generate Probability Distribution
+Functions (PDFs) in the PSD versus $Q_L$ space for each of the
+different possible combinations of events.
 
 To limit the number of possible PDFs, an approximation of the higher
 event multiplicities within a single gate is included in a single PDF.
@@ -391,11 +404,11 @@ but is treated as fixed in estimating the detector performance.
 Using a collection of randomly generated signal and background events,
 the PDFs for each of the signal types was generated.  In the case of
 the single background event, it was possible to use the data from beam
-cycles with proton-beam off, when there was no UCN produced.  The rest
-of the PDFs were generated after tuning the simulation to match the
-data.  In the simulation the average number of photo-electrons per
-neutron capture, the fall time of the fast scintillation signal, the
-fall time of the long scintillation signal, the average number of
+cycles with proton-beam off, when no UCN are produced.  The rest of
+the PDFs were generated after tuning the simulation to match the data.
+In the simulation, the average number of photo-electrons per neutron
+capture, the fall time of the fast scintillation signal, the fall time
+of the long scintillation signal, and the average number of
 photo-electrons in the background were all tuned.  In addition, the
 average charge in the signal measured by the detector, from each
 channel, was scaled to match the mean value in the simulation (as a
@@ -414,9 +427,9 @@ data is possible.
 \includegraphics[width=0.45\textwidth]{figures/hsigpile_psdql.pdf}
 \includegraphics[width=0.45\textwidth]{figures/hbg_psdql.pdf}
 \caption{ Event count (or relative event count) as a function of PSD
-  and $Q_L$, going from top to bottom is for UCN data,
-  single neutron simulation, N neutron simulation, and background (from
-  data taken during cycles without proton beam).} \label{fig:eventSpectra}
+  and $Q_L$. From top to bottom: UCN data,
+  single neutron simulation, multiple neutron simulation, and background (from
+  data from cycles without proton beam).} \label{fig:eventSpectra}
 \end{figure}
 
 
@@ -427,7 +440,7 @@ data is possible.
 \includegraphics[width=0.45\textwidth]{figures/hretrig_psdql.pdf}
 \includegraphics[width=0.45\textwidth]{figures/hlate_psdql.pdf}
 \caption{ Event count (or relative event count) as a function of PSD
-  and $Q_L$, going from top to bottom is for N background simulation,
+  and $Q_L$.  From top to bottom: multiple background simulation,
   single neutron plus single background simulation, dead-time neutron
   simulation, and re-trigger on late light simulation.}
 \label{fig:eventSpectra2}
@@ -436,17 +449,17 @@ data is possible.
 
 \section{Estimate of the absolute detector efficiency and background contamination}\label{sec:eff}
 
-In order to determine the UCN detection efficiency of the $^{6}$Li the
+In order to determine the UCN detection efficiency of the $^{6}$Li
 active area of the detector, losses due to absorption in the front
 face, and neutrons lost due to the background rejection cuts need to
-be considered.  In principle one also has to take into account the
+be considered.  In principle, one also has to take into account the
 spectrum of UCN that are being detected.  Here we will assume that we
 want to know the efficiency for detecting UCN with kinetic energy
-above the effective Fermi potential of the GS30 lithium glass ($\sim$
-$107$~neV).  Then if one has a known spectrum of UCN, the efficiency
-for detecting could be estimated as zero for the UCN below 107~neV,
-and the value we estimate here for those above 107~neV.  Note that the
-Fermi potential of the GS20 (83~neV) is lower, so should have
+above the effective Fermi potential of the GS20 lithium glass ($\sim$
+$103.4$~neV).  Then if one has a known spectrum of UCN, the efficiency
+for detecting could be estimated as zero for the UCN below 103.4~neV,
+and the value we estimate here for those above 103.4~neV.  Note that
+the Fermi potential of the GS30 (83~neV) is lower, and so should have
 negligible effect.
 
 
@@ -454,13 +467,13 @@ negligible effect.
 
 The estimate of the detector's effective area comes from a photograph
 of the front face of the detector, where the side length of each of
-the squares of $^6$Li glass is $29.0\pm0.1$~mm.  Using this known
-length the pixels in the photograph that make up the circular aperture
-of the detector are counted as the denominator, and the count of
-pixels containing lithium glass as the numerator.  A photograph of the
-detector face, that has been put in grey-scale, is shown in
-Fig.~\ref{fig:detface}.  From this image the estimated active area of
-the detector is $97.4\pm0.1$\% of the whole aperture.
+the tiles of $^6$Li glass is $29.0\pm0.1$~mm.  Using this known length
+the pixels in the photograph that make up the circular aperture of the
+detector are counted as the denominator, and the count of pixels
+containing lithium glass as the numerator.  A photograph of the
+detector face is shown in gray scale in Fig.~\ref{fig:detface}.  From
+this image the estimated active area of the detector is $97.4\pm0.1$\%
+of the whole aperture.
 
 \begin{figure}[!htpb]
 \centering \includegraphics[width = 0.49\textwidth]{figures/detface.pdf}
@@ -482,26 +495,26 @@ $\lambda=1.35\pm0.75$~cm.  The fraction of UCN making it through our
 GS30 layer is calculated to be $99.34\pm0.43$~\%.
 
 Measurements of the transmission of UCN through different thicknesses
-of GS30 have been conducted by the PSI group at the Institut
-Laue-Langevin in Grenoble\cite{Senoville}.  Using their measurements,
+of GS30 have been conducted by the LPC Caen group at the Institute
+Laue-Langevin in Grenoble\cite{Senoville}.  Using their measurements
 for a $55\pm10$~$\mu$m GS30 layer the UCN transmission is
 $92.6^{+1.2}_{-1.8}$\%. The uncertainty is asymmetric due to the
 exponential nature of the attenuation through a layer with uncertain
 thickness.  The measurements suggest that the UCN loss through a GS30
 layer is not dominated by the $^{6}$Li content, but by losses by
-up-scattering on other material of the glass such as on Si and O.
+up-scattering on other material of the glass such as Si and O.
 
-\subsection{ PSD cut efficiency and background rejection}
+\subsection{ PSD cut efficiency and background rejection}\label{sec:bgreject}
 
 The PSD and $Q_L$ cut efficiency for keeping UCN, and background
 contamination remaining is estimated using an extended maximum
 likelihood fit of the PDF templates described in
 Section~\ref{sec:sim}.  The PDFs, binned in PSD and $Q_L$, are
-labelled as $P_{i}( PSD, Q_L )$, where $i$=( 1 sig, N sig, 1 bg, N bg,
-1 sig 1 bg, dead, or retrig).  The number of each type of event is
-estimated as $N_i$ by minimizing a negative log likelihood that is
-calculated as a sum over all $M$ of the PSD$^j$ and $Q_L^j$
-measurements in the data as:
+labelled as $P_{i}( PSD, Q_L )$, where $i$=( 1n, Nn, 1$\gamma$,
+N$\gamma$, 1n1$\gamma$, 1n deadtime, or 0n0$\gamma$).  The number of
+each type of event is estimated as $N_i$ by minimizing a negative log
+likelihood that is calculated as a sum over all $M$ of the PSD$^j$ and
+$Q_L^j$ measurements in the data as:
 
 \begin{equation}
 -\ln{(L)} = \sum_{i}^{7} N_i - \sum_{j}^{M} \ln{ \sum_{i}^{7} P_i( PSD^j, Q_L^j) }.
@@ -557,8 +570,8 @@ contamination fraction is defined as:
 \end{equation}
 
 \noindent Figure \ref{fig:detectionEff} shows the neutron efficiency
-and background contamination of the entire beam pulse spectrum for two
-PSD cuts.  For a cut $Q_L>3000$~ADC and PSD$>0.3$, the neutron
+and background contamination during the entire UCN cycle for two
+PSD cut values.  Using the cuts $Q_L>3000$~ADC and PSD$>0.3$, the neutron
 acceptance is $99.5\pm0.5$\% and the background contamination
 is $0.3\pm0.1$\%.
 
@@ -577,14 +590,15 @@ is $0.3\pm0.1$\%.
 The rate of neutrons varies over the 300 second cycle of the UCN
 produced at PSI.  To study the neutron detection efficiency and
 background contamination at different rates, the data was split into
-three time periods after the proton beam irradiation: high rate,
-middle rate, and low rate.  The split data was fitted according to the
-template fit and then the efficiency was calculated according to each
-fit.  The low rate data had more background contamination than the
-other rates, presumably due to the higher ratio of background to
-signal events.  Using a cut on $Q_L > 3000$~ADC and $PSD>0.3$, the
-neutron efficiency was $99.5\pm0.5$\% and the background contamination
-was $0.3\pm0.1$\%.
+three time periods after the proton beam irradiation: high rate
+(0-10s), middle rate (10-40s), and low rate (40-270s).  Each of these
+data sets was fit using the template fit and then the efficiency was
+calculated using the parameters from each fit.  As shown in
+Fig.~\ref{fig:detectionEffLayered}, the low rate data had more
+background contamination than the other rates, presumably due to the
+higher ratio of background to signal events.  Using a cut on $Q_L >
+3000$~ADC and $PSD>0.3$, the neutron efficiency was $99.5\pm0.5$\% and
+the background contamination was $0.3\pm0.1$\%.
 
 \begin{figure}[!htpb]
 \centering \includegraphics[width = 0.49\textwidth, angle=0]{figures/neutronEffLayered.pdf}
@@ -601,7 +615,7 @@ was $0.3\pm0.1$\%.
 
 The $^6$Li detector therefore has a very good background rejection due
 to the signal shape variation between lightguide background and the
-scintillation events from the lithium glass.
+scintillation events from the lithium glass.  
 
 \subsection{Overall Detector Efficiency Estimate}
 
@@ -613,7 +627,9 @@ below the $0.5$\% level.  This uncertainty could be improved by
 applying what we know about the statistics of random signals and
 backgrounds to model the expected rates.  This would represent an
 improvement to the simple fit with unconstrained fractions of
-different types of pile-up described in this paper.
+different types of pile-up described in this paper.  Some details of
+the statistics of random signal and background rates is provided in
+Appendix~\ref{sec:stats}.
 
 
 \section{ Relative rate comparison }\label{sec:relative}
@@ -626,38 +642,37 @@ West-1 in a horizontal configuration provides UCN with energies
 starting above 54~neV given by the safety AlMg$_3$ foil in the
 beamline.  
 
-UCN rates on the West-1 beamline are typically a factor of
-10 higher than on West-2.  The operation mode during our measurements
-was however given by the priority of the nEDM experiment measuring at
-the third beam-port.  During the measurement period described here, the
-UCN source operation was using 3 second long proton beam bunches with
-a repeating period of 300 seconds .  During and after the proton beam
+UCN rates on the West-1 beamline are typically a factor of 10 higher
+than on West-2.  The operation mode during our measurements was given
+by the priority of the nEDM experiment measuring at the third
+beam-port.  During the measurement period described here, the UCN
+source operation was using 3 second long proton beam bunches with a
+repeating period of 300 seconds .  During and after the proton beam
 bunches the UCN can propagate down the beam line to the experiment
 area.  Typical UCN detector rates during 300 second periods in West-1
 and West-2 measured with our scintillation detector are shown in
-Fig.~\ref{fig:protonCycle}.  
+Fig.~\ref{fig:protonCycle}.
 
-Note that our detector's 75~mm diameter
-aperture does not match the 160~mm aperture of the West-1 beam-line,
-and that it can only see UCN above the Fermi potential of the
-scintillating glass (107 neV).  This means that we see relatively
-more UCN from the vertical source, that has a spectrum starting at
-about 100~neV, matching our detector Fermi potential, than from the
-softer source of the horizontal West-1 beam.  The PSI group has made
-measurements showing that on West-1, about 32\% of the UCN are between
-54~neV and 100~neV.  Also two UCN cycles shown in the figure were
-taken on different days, and we know from measurements of the PSI
-group that during that time, the PSI UCN source saw about a 15\%
-decrease in the number of UCN.  Therefore we expect to see less than
-the 10$\times$ difference in UCN rate when comparing the distributions
-in Fig.~\ref{fig:protonCycle}.
+Note that our detector's 75~mm diameter aperture does not match the
+160~mm aperture of the West-1 beam-line, and that it can only see UCN
+above the Fermi potential of the scintillating glass (103.4 neV).
+This means that we see relatively more UCN from the vertical source,
+which has a spectrum starting at about 100~neV, matching our detector
+Fermi potential, than from the softer source of the horizontal West-1
+beam.  The PSI group has made measurements showing that on West-1,
+about 32\% of the UCN are between 54~neV and 100~neV.  Also, the two
+UCN cycles shown in the figure were taken on different days, and we
+know from measurements of the PSI group that during that time, the PSI
+UCN source saw about a 15\% decrease in the number of UCN.  Therefore,
+we expect to see less than the 10$\times$ difference in UCN rate when
+comparing the distributions in Fig.~\ref{fig:protonCycle}.
 
 \begin{figure}[htpb] 
 \begin{center} 
 \includegraphics[width=0.49\textwidth]{figures/run54_to_run40_bunch0_compare.pdf} 
 \caption{ UCN observed during one proton beam bunch, as detected with
-  the Winnipeg $^6$Li UCN detector on West-1 (red) and West-2 (blue).
-  The small peak before the main peak is caused by a 7~ms long pilot
+  the $^6$Li UCN detector on West-1 (red) and West-2 (blue).  The
+  small peak before the main peak is caused by a 7~ms long pilot
   proton beam bunch used for checking the beam centering before the
   main beam bunch on the spallation target. }
 \label{fig:protonCycle} 
@@ -667,7 +682,7 @@ in Fig.~\ref{fig:protonCycle}.
 The $Q_L$ distribution from each of the nine channels of the detector,
 with a PSD cut at 0.3 to eliminate the lightguide backgrounds, is
 shown in Fig.~\ref{fig:nineup}.  These data are from twelve UCN cycles
-of the PSI source collected from the horizontal West-2 beamline.  It
+of the PSI source collected from the horizontal West-1 beamline.  It
 is clear from these distributions that there is very little background
 remaining.  The different numbers of counts seen make sense due to the
 geometry of the detector.  The corner square tiles are shadowed the
@@ -679,7 +694,7 @@ lowest count.
 \includegraphics[width=0.95\textwidth]{figures/nineup.pdf}
 \caption{ Event count per $Q_L$ bin from each of the nine channels of
   the $^{6}$Li scintillation detector from twelve cycles of UCN beam
-  on the horizontal PSI West-2 beamline.}
+  on the horizontal West-1 beamline.}
 \label{fig:nineup}
 \end{figure*}
 
@@ -688,7 +703,7 @@ lowest count.
 
 In order to determine the rate stability of the detector, the first
 five channels' count (set A) per UCN cycle was compared to the last
-four channels (set B).  During each UCN cycle on the West-2 beamline,
+four channels (set B).  During each UCN cycle on the West-1 beamline,
 the $^6$Li detector counted about $3\times10^6$ neutrons, which has a
 statistical uncertainty of 0.06\% (or 0.08\% in each of two equal
 sized samples).  A long overnight run containing 114 UCN cycles (9.5
@@ -708,9 +723,9 @@ is stable at the 0.08\% level.
 \includegraphics[width=0.45\textwidth]{figures/ratestab_ch04_Run62.pdf}
 \includegraphics[width=0.45\textwidth]{figures/ratestab_ch58_Run62.pdf}
 \includegraphics[width=0.45\textwidth]{figures/ratestab_ratio_Run62.pdf}
-\caption{ The top panel shows the Event count from Set A (Channels
+\caption{ The top panel shows the Event count from set A (Channels
   0-4) for each of the 300 s UCN cycles on West-2, the middle panel
-  shows the Event count from Set B (Channels 5-8), and the bottom
+  shows the event count from set B (Channels 5-8), and the bottom
   panel shows the ratio of counts from set B over set A.}
 \label{fig:ratiocount}
 \end{figure}
@@ -729,7 +744,7 @@ summarized in Table~\ref{tab:relrates} and show there is a few
 percent, up to 5\%, difference between the exposed area and the
 measured count rate.  These differences could be due to a non-uniform
 UCN distribution reaching the detector, differences in the GS30 layer
-thicknesses, or the surface quality of each of the detector's pixels.
+thicknesses, or the surface quality of each of the detector's tiles.
 
 
 \begin{figure*}[!htpb]
@@ -804,7 +819,7 @@ detector comes with its own proprietary data acquisition system.  The
 data acquisition is based on a complex pattern recognition algorithm
 which is performed online in the detector's FPGA electronics.  This
 allows the software to define, within a given range, what patterns are
-accepted as a 'neutron' event.  A stacked type of Cascade counter is
+accepted as a `neutron' event.  A stacked type of Cascade counter is
 more commonly used for cold and thermal neutron
 counting\cite{cascade}.
 
@@ -824,10 +839,10 @@ to allow for a comparison of the averaged UCN rate over the course of
 the beam cycle for both detectors for the same cycle.  The timing
 calibration between the two detectors' Data AcQuisition (DAQ) was done
 at the few second level by comparing the time reported by the DAQ
-computers.  A more close matching of the time in the analysis of the
-data was performed at about the 0.05~s level by aligning the times
-when the UCN rate was increasing after the main proton beam
-irradiation of the spallation target.
+computers.  A closer matching of the time in the analysis of the data
+was performed at about the 0.05~s level by aligning the times when the
+UCN rate was increasing after the main proton beam irradiation of the
+spallation target.
 
 The gross timing is confirmed by looking at the total count of UCN
 seen in each detector per proton beam irradiation cycle.  These counts
@@ -836,19 +851,20 @@ skipped and both detectors do not see UCN.
 Figure~\ref{fig:ratecompare} shows the count of UCN detected in each
 300 s cycle by each of the detectors.
 
-Note that $^{6}$Li detector connects to the UCN source with a 75~mm
-aperture to the UCN guide, while the Cascade detector connects with a
-70~mm aperture.  To get a rough comparison of the two detectors, the
-count seen by the $^{6}$Li detector is also shown scaled down by the
-ratio of areas ($0.871$).  This comparison shows that the relative
-count of UCN from the PSI source was changing over the course of this
-data collection period, and that for the spectrum of UCN in this
-beamline for the ${6}$Li detector is $10.279 \pm 0.024$(stat)\%.  The
-y-configuration is as direct a comparison as could be obtained,
-however simulations indicate there could be up to that large of a
-difference in expected UCN rate due to uncertainties in the initial
-UCN spectrum and the additional connectors required to reduce the
-75~mm diameter guide to 70~mm diameter for the Cascade detector.
+Note that the $^{6}$Li detector connects to the UCN source with a
+75~mm aperture to the UCN guide, while the Cascade detector connects
+with a 70~mm aperture.  To get a rough comparison of the two
+detectors, the count seen by the $^{6}$Li detector is also shown
+scaled down by the ratio of areas ($0.871$).  This comparison shows
+that the relative count of UCN from the PSI source was changing over
+the course of this data collection period, and that for the spectrum
+of UCN in this beamline for the ${6}$Li detector is $10.279 \pm
+0.024$(stat)\%.  The y-configuration is as direct a comparison as
+could be obtained, however simulations indicate there could be up to
+that large of a difference in expected UCN rate due to uncertainties
+in the initial UCN spectrum and the additional connectors required to
+reduce the 75~mm diameter guide to 70~mm diameter for the Cascade
+detector.
 %Overall the lithium detector
 %observed $8.28\pm0.02$(stat)$\pm$2.00(syst)\% more efficient for
 %the UCN from the PSI source.
@@ -866,21 +882,20 @@ UCN spectrum and the additional connectors required to reduce the
 
 In addition to the comparison of the count for a whole 300 second
 cycle, the UCN detection rate in 0.1 second bins since the beginning
-of the beam cycle averaged over 132 beam cycles is compared, as shown in
-Fig.~\ref{fig:averagedRate}.  This comparison includes the area
+of the beam cycle averaged over 132 beam cycles is compared, as shown
+in Fig.~\ref{fig:averagedRate}.  This comparison includes the area
 normalization, and shows that the $^{6}$Li detector appears to detect
 more UCN at higher rates at earlier times since the UCN production
 than the Cascade detector.  We attribute the lower rate at later times
 to the difference in the Fermi potential of the two detectors.  The
-$^6$Li detector's lithium depleted glass, which is the first material
-that the UCN see has a Fermi potential of 107~neV, while the Cascade
-detector has an Al window with an effective Fermi potential of 54~neV.
-The faster UCN reach the detectors sooner, and the $^6$Li detector's
-performance for the higher energy UCN is better than the Cascade
-detector.  However, later in the beam cycle, the UCN spectrum is
-softer, and the lower energy UCN are not seen by $^{6}$Li detector,
-making the Cascade detector more efficient for lower energy UCN (below
-107~neV).
+$^6$Li detector's lithium glass Fermi potential is 103.4~neV, while
+the Cascade detector has an Al window with an effective Fermi
+potential of 54~neV.  The faster UCN reach the detectors sooner, and
+the $^6$Li detector's performance for the higher energy UCN is better
+than the Cascade detector.  However, later in the beam cycle, the UCN
+spectrum is softer, and the lower energy UCN are not seen by $^{6}$Li
+detector, making the Cascade detector more efficient for lower energy
+UCN (below 103.4~neV).
 
 \begin{figure}[!htpb]
 \centering \includegraphics[width = 0.49\textwidth]{figures/cascade_to_li_130cycleavg.pdf}
@@ -896,18 +911,23 @@ making the Cascade detector more efficient for lower energy UCN (below
 % Concluding remarks
 \section{Conclusion}
 
-At high rates, the $^6$Li detector had a higher counting efficiency
-than the Cascade detector.  At later times in the UCN production
-cycle, which had a lower rate of UCN, the Cascade detector had a
-higher counting efficiency.  This is explained as being due to the
-higher efficiency of the $^{6}$Li detector for higher energy UCN
-reaching the detector soon after the UCN production.  The lower
-efficiency at late times is due to a softer UCN spectrum at late
-times, and the higher Fermi potential of the lithium glass of
-$107$~neV.  The $^6$Li detector has some sensitivity to background
-radiation, which is reduced by PSD cuts to a level of $0.3\pm0.1$\%
-for the rates of background seen at PSI.
+In this paper we have presented a detailed electronics simulation
+which has been used to estimate the detector efficiency and background
+rejection for the data collected at the PSI UCN source.  We estimate
+our detector efficiency is $89.7^{+1.3}_{-1.9}$\%, and background
+contamination to be $0.3\pm0.1$\%.  Using comparisons of the rates of
+UCN from the different tiles of the $^{6}$Li detector, and to the rate of
+UCN in a Cascade detector, we have demonstrated that the detector is
+stable at the 0.08\% level. 
 
+\section{Acknowledgements}
+
+We acknowledge support of the National Science and Engineering
+Research Council (NSERC) and Canadian Foundation for Innovation (CFI)
+in Canada.  We thank our colleages at PSI for allowing us to conduct
+or detector tests at their facility.  Finally we thank staff and
+colleages at TRIUMF who have provided support and feedback in the
+design and testing of the detector.
 
 \section*{References}
 
