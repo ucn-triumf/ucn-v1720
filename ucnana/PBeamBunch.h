@@ -21,10 +21,11 @@ class PBeamBunch {
  public:
 
   /// PBeamBunch constructor takes as arguments:
-  //  the initial time when the proton beam pulse starts in 4ns clock cycles (mintime)
-  //  the final time before next proton beam pulse starts in 4ns clock cycles (maxtime)
-  /// Note that you can make this longer than the actual beam bunch and be okay.
-  PBeamBunch( int bunchnum, ULong64_t mintime, ULong64_t maxtime );   
+  ///  the initial time when the proton beam pulse starts in 4ns clock cycles (mintime)
+  ///  the final time before next proton beam pulse starts in 4ns clock cycles (maxtime)
+  ///  Note that you can make this longer than the actual beam bunch and be okay.
+  ///  The final argument is a unix time stamp to make a set of plots in real time also
+  PBeamBunch( int bunchnum, ULong64_t mintime, ULong64_t maxtime, int tstart );   
 
   /// Destructor does nothing!  Histograms are owned by any TFile
   /// opened before using this class
@@ -68,13 +69,32 @@ class PBeamBunch {
   /// Get Overall Gamma Rage Histogram
   TH1D* GetGHist(){ return hevsgamma; };
 
+  /// Get array of rate histograms -> xaxis in real time (unix timestamp)
+  TH1D** GetTHistsRT(){ return hevpersrt; };
+
+  /// Get Overall Rate Histogram -> xaxis in real time (unix timestamp)
+  TH1D* GetTHistRT(){ return hevsrt; };
+
+  /// Get Overall Gamma Rage Histogram -> xaxis in real time (unix timestamp)
+  TH1D* GetGHistRT(){ return hevsgammart; };
+
  private:
 
   TH2D * hqsql[ PSD_MAXNCHAN * NDPPBOARDS ];   //< Short vs Long Charge for this beam bunch (for each channel)
   TH2D * hpsdql[ PSD_MAXNCHAN * NDPPBOARDS ];   //< (QL-QS)/QL vs Long Charge for this beam bunch (for each channel)
-  TH1D * hevpers[ PSD_MAXNCHAN * NDPPBOARDS ]; //< Events in 1 second intervals (for each channel)
-  TH1D * hevs;                                 //< Total Events in 1 second intervals (for all channels summed)
-  TH1D * hevsgamma;                            //< Total "Gamma cut" Events in 1 second intervals (for all channels summed)
+
+  TH1D * hevpers[ PSD_MAXNCHAN * NDPPBOARDS ]; //< Events in 0.1 second intervals (for each channel)
+  TH1D * hevs;                                 //< Total Events in 0.1 second intervals (for all channels summed)
+  TH1D * hevsgamma;                            //< Total "Gamma cut" Events in 0.1 second intervals (for all channels summed)
+
+  TH1D * hevpersrt[ PSD_MAXNCHAN * NDPPBOARDS ]; //< Events in 0.1 second intervals (for each channel)
+  TH1D * hevsrt;                                 //< Total Events in 0.1 second intervals (for all channels summed)
+  TH1D * hevsgammart;                            //< Total "Gamma cut" Events in 0.1 second intervals (for all channels summed)
+
+
+  TH2D * hqldt; // < charge long vs time since last pulse (in a given chan)
+  ULong64_t tlast[ PSD_MAXNCHAN * NDPPBOARDS ]; //< time of last pulse (in a given channel)
+
 
   int ibunch;  //< Bunch number for ordering in file.
 
@@ -83,6 +103,8 @@ class PBeamBunch {
 
   ULong64_t tmin;  //< Minimum time in histograms (4ns clock cycles)
   ULong64_t tmax;  //< Maximum time in histograms (4ns clock cycles)
+
+  int fRunT0; //< Run start time as unix timestamp
 
 };
 #endif

@@ -77,11 +77,12 @@ CascadeTOF::CascadeTOF( char * infilename ){//, int nx, int ny, int ntbins, floa
 	       <<fBegMin<<":"
 	       <<fBegSec<<std::endl;
       // build the unix timestamp
+      // Use the ROOT UTC time offset:  counting from 01/01/1995
       std::tm timeinfo;
-      timeinfo.tm_year = fBegYr+2000-1900;
+      timeinfo.tm_year = fBegYr+2000-1995;
       timeinfo.tm_mon  = fBegMon-1;
       timeinfo.tm_mday = fBegDay;
-      timeinfo.tm_hour = fBegHr-6; // may need to adjust for timezone -- this number works for winnipeg?
+      timeinfo.tm_hour = fBegHr; // may need to adjust for timezone -- this number works for winnipeg?
       timeinfo.tm_min  = fBegMin;
       timeinfo.tm_sec  = fBegSec;
       fStartTime = std::mktime( &timeinfo );
@@ -123,7 +124,11 @@ CascadeTOF::CascadeTOF( char * infilename ){//, int nx, int ny, int ntbins, floa
   char histname[100];
   sprintf( histname, "hTOF%s",infilename );
   fTOF=new TH1D(histname," ; Time (s) ; Count/bin",ntbins,0.0, float(ntbins)*binwid );
-
+  sprintf( histname, "hTOFt%s",infilename );
+  fTOFt=new TH1D(histname," ; Unix Time (s) ; Count/bin",ntbins,
+		float( fStartTime ), float( fStartTime ) + float(ntbins)*binwid );
+  fTOFt->GetXaxis()->SetTimeDisplay(1);
+  fTOFt->GetXaxis()->SetTimeFormat("%m/%d %H:%M");
   //return;
 
   ifstream fin;
@@ -136,7 +141,7 @@ CascadeTOF::CascadeTOF( char * infilename ){//, int nx, int ny, int ntbins, floa
   fin.open( datafilename.c_str() );
   if ( fin.is_open() == false ){
     std::cout<<"Couldnt open file!"<<std::endl;
-    exit(0);
+    return;
   }
   std::cout<<"nx="<<nx<<" ny="<<ny<<" nbins="<<ntbins<<std::endl; 
   for (int i = 0 ; i < ntbins; i++ ){
@@ -145,6 +150,8 @@ CascadeTOF::CascadeTOF( char * infilename ){//, int nx, int ny, int ntbins, floa
     for (int j=0; j< nx*ny; j++ ) fin >> junk;
     fTOF->SetBinContent(bin,float(count));
     fTOF->SetBinError(bin,sqrt(float(count)));
+    fTOFt->SetBinContent(bin,float(count));
+    fTOFt->SetBinError(bin,sqrt(float(count)));
   }
-  
+  fin.close();
 }

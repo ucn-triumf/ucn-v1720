@@ -1,6 +1,7 @@
-#include "TUCNTimeWindows.h"#include <iostream>
+#include "TUCNTimeWindows.h"
+#include <iostream>
 
-TUCNTimeWindows::TUCNTimeWindows( int arun, TTree * atUCN ){
+TUCNTimeWindows::TUCNTimeWindows( int arun, TTree * atUCN, TTree* atRunTran ){
   // initialize the time window structures.
   tstart = 0;
   base = 0;
@@ -11,6 +12,7 @@ TUCNTimeWindows::TUCNTimeWindows( int arun, TTree * atUCN ){
   vStartTimes.reserve(1000);
   vEndTimes.reserve(1000);
   twhists.reserve(100);
+  vRunStartTimes.reserve(1000);
 
   TDirectory* topdir=gDirectory;  
   twdir= topdir->mkdir("UCNTimeWindowCheck");
@@ -18,13 +20,21 @@ TUCNTimeWindows::TUCNTimeWindows( int arun, TTree * atUCN ){
   twdir->cd();
     
   hdtwin=new TH1D("hdtwin","Time between proton beam signals",100, PBEAMTIMESEP-5.0, PBEAMTIMESEP+5.0);
-  CalcTimes( arun, atUCN );
+  CalcTimes( arun, atUCN, atRunTran );
 
   topdir->cd();
 }
 
-void TUCNTimeWindows::CalcTimes( int arun, TTree * atUCN ){
-  
+void TUCNTimeWindows::CalcTimes( int arun, TTree * atUCN, TTree* atRunTran ){
+  // Get the unix timestamp for the start of the run
+  Int_t tRunnum;
+  Int_t tRunstarttime;
+  ULong64_t tEntry;
+  atRunTran->SetBranchAddress("tRunNum",&tRunnum);
+  atRunTran->SetBranchAddress("tTime",&tRunstarttime);
+  atRunTran->SetBranchAddress("tEntry",&tEntry);
+  atRunTran->GetEvent(0);
+
   // Set up TTree pointer to these variables
   ULong64_t tTimeE;
   UShort_t tChannel;
@@ -50,16 +60,20 @@ void TUCNTimeWindows::CalcTimes( int arun, TTree * atUCN ){
   atUCN->GetEvent( eventTot - 1 );
   time2 = tTimeE+base +  TTimeOffsets::Get()->Offset( arun, tChannel, tTimeE+base );
   if ( nfileschecked == 0) tstart = time1;
+
+  std::cout<<"<TUCNTimeWindows> First Pass over TTree"<<std::endl;
   for( ULong64_t j=0; j<eventTot; j++ ) {
     atUCN->GetEvent(j);
     tTimeE+=base +  TTimeOffsets::Get()->Offset( arun, tChannel, tTimeE+base );
-    if ( j%100000 ==0 ) printf("Load event % 20lldu of % 20lldu  t = % 20lldu base=% 20lldu\n",j,eventTot,tTimeE,base);
+    //if ( j%100000 ==0 ) printf("Load event % 20lldu of % 20lldu  t = % 20lldu base=% 20lldu\n",j,eventTot,tTimeE,base);
+    if ( j%100000 ==0 ) std::cout<<"."<<std::flush;
     
     if ( tTimeE < tstart ) tstart = tTimeE;
     if ( tTimeE < time1 ) time1 = tTimeE;
     if ( tTimeE > time2 ) time2 = tTimeE;
   }
-    
+  std::cout<<std::endl;
+  
   int nbinstotal = int( 10.0*((time2-time1)*PBNSTOSEC) );
   double time1s = time1*PBNSTOSEC;
   double time2s = time2*PBNSTOSEC;
@@ -77,8 +91,18 @@ void TUCNTimeWindows::CalcTimes( int arun, TTree * atUCN ){
 	    << " bins from t="<< time1s <<" to t="<< time2s << std::endl;
   TH1D* curhist = new TH1D( aname, atitle, nbinstotal, time1s, time2s  );
   twhists.push_back( curhist );
-  
 
+  sprintf(aname,"UCNRT%04d",nfileschecked);
+  sprintf(atitle,"Rate / 0.1 sec file %d; Clock Time (s); Count/0.1sec",nfileschecked);
+  
+  std::cout << "<TUCNTimeWindows> Build histogram with " << nbinstotal 
+	    << " bins from t="<< time1s+tRunstarttime <<" to t="<< time2s+tRunstarttime << std::endl;
+  TH1D* curhistrt = new TH1D( aname, atitle, nbinstotal, 
+			      time1s+double(tRunstarttime), time2s+double(tRunstarttime)  );
+  twhistsrt.push_back( curhistrt );
+  curhistrt->GetXaxis()->SetTimeDisplay(kTRUE);
+  // force root to use the standard unix time stamp instead of the root one
+  curhistrt->GetXaxis()->SetTimeFormat("%m/%d %H:%M%F1970-01-01 00:00:00s0");
 
   if ( nfileschecked == 0){
     for (int iboard=0; iboard<NDPPBOARDS; iboard++){
@@ -92,14 +116,18 @@ void TUCNTimeWindows::CalcTimes( int arun, TTree * atUCN ){
   }
 
   // fill current time windows histogram
+  std::cout<<"<TUCNTimeWindows> Filling histograms loop over TTree"<<std::endl;
   for( ULong64_t j=0; j<eventTot; j++ ) {
     atUCN->GetEvent(j);
     tTimeE+=base +  TTimeOffsets::Get()->Offset( arun, tChannel, tTimeE+base );
-    if ( j%100000 ==0 ) printf("(2nd pass) Load event % 20lldu of % 20lldu  t = % 20lldu base=% 20lldu\n",j,eventTot,tTimeE,base);
+    if ( j%100000 ==0 ) std::cout<<"."<<std::flush;
+    //if ( j%100000 ==0 ) printf("(2nd pass) Load event % 20lldu of % 20lldu  t = % 20lldu base=% 20lldu\n",j,eventTot,tTimeE,base);
     curhist->Fill( tTimeE*PBNSTOSEC );
+    curhistrt->Fill( tTimeE*PBNSTOSEC + double(tRunstarttime) );
     twhistch[ tChannel ]->Fill( tTimeE*PBNSTOSEC );
   }
-  
+  std::cout<<std::endl;
+
   // need to reset base and loop over tree again
   base = prevbase;
   
@@ -110,15 +138,16 @@ void TUCNTimeWindows::CalcTimes( int arun, TTree * atUCN ){
   if (PBUSEPBSIGNAL == true) {
     // No need to fill time window histogram.  Just loop through the
     // file looking for the proton beam signal.
+    std::cout<<"<TUCNTimeWindows> Find proton beam signal times"<<std::endl;
     for( ULong64_t j=0; j<eventTot; j++ ) {
       atUCN->GetEvent(j);
-      if ( j%100000 ==0 ) printf("(3rd pass) Load event % 20lldu of % 20lldu  t = % 20lldu base=% 20lldu\n",j,eventTot,tTimeE,base);
+      //if ( j%100000 ==0 ) printf("(3rd pass) Load event % 20lldu of % 20lldu  t = % 20lldu base=% 20lldu\n",j,eventTot,tTimeE,base);
       if ( tChannel != PBCHAN ) continue;
       if ( tChargeL < PBQLMIN ) continue;
       if ( tChargeL > PBQLMAX ) continue;
       tTimeE+=base +  TTimeOffsets::Get()->Offset( arun, tChannel, tTimeE+base );
       
-      double mpv = tTimeE*PBNSTOSEC;
+      double mpv = tTimeE*PBNSTOSEC - 6.45; // arbitrarily add a 6.45 s offset to when to make window.
       double twminwin = mpv;
       double twmaxwin = mpv+PBEAMTIMESEP;
       
@@ -128,7 +157,10 @@ void TUCNTimeWindows::CalcTimes( int arun, TTree * atUCN ){
       vStartTimes.push_back( twminwin );
       vEndTimes.push_back( twmaxwin );
       isGVclosed.push_back( false ); // assume open!
+      // save run start time.  
+      vRunStartTimes.push_back( tRunstarttime );
       
+
       //      curhist->Fill( tTimeE*PBNSTOSEC );
     }
     
@@ -173,7 +205,10 @@ void TUCNTimeWindows::CalcTimes( int arun, TTree * atUCN ){
     vStartTimes.push_back( twminwin );
     vEndTimes.push_back( twmaxwin );
     isGVclosed.push_back( false );
+    // save run start time.  
+    vRunStartTimes.push_back( tRunstarttime );
     
+
     // guess number of time windows by first and last times
     int guessntwin = (time2s-time1s)/PBEAMTIMESEP;
     
@@ -225,6 +260,9 @@ void TUCNTimeWindows::CalcTimes( int arun, TTree * atUCN ){
       vBeamTimes.push_back( mpv );
       vStartTimes.push_back( twminwin );
       vEndTimes.push_back( twmaxwin ); 
+      // save run start time.  
+      vRunStartTimes.push_back( tRunstarttime );
+
     }
   }
 

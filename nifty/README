@@ -1,0 +1,19 @@
+nifty = neutron intelligent fitting, yay!
+      usage: ./nifty
+tool to fit for number of neutrons, number of background, and number of retriggers
+
+Blair Jamieson, Nov 2015
+
+dataforfit: normalizes data over all nine channels of detector
+	    requires access to data file
+	    usage: ./dataforfit
+makepdfs: makes pdfs templates to be used in nifty
+	  requires access to data file and simulation file
+	  usage: ./makepdfs
+plotnifty: plots fits from nifty
+	   usage: root
+	  	 .x plotnifty.C
+
+Note: all files (except for plotnifty) use .ini files for parameters
+
+Lori Rebenitsch, Feb. 2016

@@ -67,6 +67,10 @@ void TWindow(){//char * outfilename="TWindow.root"){
   // read in text file of data files to be read
   ifstream fList;
   fList.open("twinforruns.txt");
+  if ( fList.is_open() == false ){
+    std::cout<<"Could not open file list : twinforruns.txt"<<std::endl;
+    return;
+  }
 
   ULong64_t eventTot;
 
@@ -122,16 +126,21 @@ void TWindow(){//char * outfilename="TWindow.root"){
     } 
     if ( fin->IsOpen() == false ) {
       std::cout<<"file not open : "<<infilename<<std::endl;
+      
       continue;
     }
     fin->ls();
     
     TTree* uin = (TTree*) fin->Get("tUCN");
-    
+    TTree* truntime = (TTree*) fin->Get("tRunTran");
+
+    uin->Print();
+    truntime->Print();
+
     fout->cd();
 
-    if ( twfinder==NULL ) twfinder = new TUCNTimeWindows( runnum, uin );
-    else twfinder->CalcTimes( runnum, uin );
+    if ( twfinder==NULL ) twfinder = new TUCNTimeWindows( runnum, uin, truntime );
+    else twfinder->CalcTimes( runnum, uin, truntime );
   }
 
   // Finished first passes over data... print out proton beam bunch info
@@ -145,8 +154,10 @@ void TWindow(){//char * outfilename="TWindow.root"){
   for (int ibunch=0; ibunch<twfinder->NBunches(); ibunch++){
     ULong64_t btmin = ULong64_t( twfinder->GetStartTime( ibunch ) / PBNSTOSEC );
     ULong64_t btmax = ULong64_t( twfinder->GetEndTime( ibunch ) / PBNSTOSEC );
-    std::cout<<"Build PBeamBunch "<<ibunch<<" from "<<btmin<<" to "<<btmax<<std::endl;
-    pbunches.push_back( new PBeamBunch( ibunch, btmin, btmax ) );
+    int tstart = twfinder->GetRunStartTime( ibunch );
+    std::cout<<"Build PBeamBunch "<<ibunch<<" from "<<btmin<<" to "<<btmax
+	     <<" tstart="<<tstart<<std::endl;
+    pbunches.push_back( new PBeamBunch( ibunch, btmin, btmax, tstart ) );
     
   }
 
@@ -174,22 +185,25 @@ void TWindow(){//char * outfilename="TWindow.root"){
     uin->GetEvent(eventTot-1);
     time2 = tTimeE+base+TTimeOffsets::Get()->Offset( runnum, tChannel, tTimeE+base );    
 
+    std::cout<<"Pass over data to fill histograms per proton beam bunches"<<std::endl;
     for(ULong64_t j=0;j<eventTot;j++) {
       uin->GetEvent(j);
       tTimeE+=base+TTimeOffsets::Get()->Offset( runnum, tChannel, tTimeE+base );
       if ( tChannel > npmts-1 ) continue;
       PBeamBunch * bunch = FindBunch( curbunch, tTimeE, pbunches );
 
-      if (j%500000==0){
-	int icb=0;
-	for (int ib=0; ib<pbunches.size(); ib ++){
-	  if ( pbunches[ib] == bunch ) {
-	    icb = ib;
-	    break;
-	  }
-	}
-	printf("(2nd pass) Load event % 20lldu of % 20lldu  t = % 20lldu curbunch=%d\n",j,eventTot,tTimeE,  icb );
+      if (j%500000==0){ 
+	std::cout<<"."<<std::flush;
       }
+      //	int icb=0;
+      //	for (int ib=0; ib<pbunches.size(); ib ++){
+      //	  if ( pbunches[ib] == bunch ) {
+      //	    icb = ib;
+      //	    break;
+      //	  }
+      //	}
+	//printf("(2nd pass) Load event % 20lldu of % 20lldu  t = % 20lldu curbunch=%d\n",j,eventTot,tTimeE,  icb );
+      //}
 
       if (bunch != NULL)
 	bunch->Fill( tChannel, tTimeE, tChargeS, tChargeL );
@@ -197,7 +211,7 @@ void TWindow(){//char * outfilename="TWindow.root"){
     }
     base += time2;
   }
-
+  std::cout<<std::endl;
   // Now we can do some analysis on the results!
   // hell yeah!
   
