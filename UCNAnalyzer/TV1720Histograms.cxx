@@ -4,7 +4,6 @@
 
 
 
-
 /// Reset the histograms for this canvas
 TV1720QSQLHistograms::TV1720QSQLHistograms(){
 

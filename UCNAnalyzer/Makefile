@@ -4,7 +4,8 @@
 NDPPBOARDS=2
 PSD_MAXNCHAN=8
 
-CXXFLAGS = -g  -O2 -Wall -Wuninitialized
+
+CXXFLAGS = -g -Wall -Wuninitialized
 
 # optional ZLIB library
 
@@ -27,19 +28,29 @@ ROOTANADIR = $(HOME)/packages/rootana/
 ROOTANAINC = -I$(ROOTANADIR)/include
 ROOTANALIBS = $(ROOTANADIR)/lib/librootana.a
 
+CAENDIGLIB = $(HOME)/CAENDigitizer_2.6.0/include
+CAENCOMMLIB = $(HOME)/CAENComm-1.2/include
+
 OBJS:=
 OBJS += TV1720Histograms.o
 OBJS += TUCNAnaManager.o
 OBJS += PulseShapeStruct.o
 OBJS += TUCNAnaViewer.o
 OBJS += TUCNAnaViewer2.o
-
-all: $(OBJS) UCNAnalyzer.exe UCNDisplay.exe UCNDisplay2.exe 
-
+OBJS += TUCNAnaViewer3.o
+OBJS += TV1720WaveformDisplay.o
+#OBJS += TUCNAnaViewer4.o
+#TUCNAnaViewer3 added June 15, 2016
+#TUCNAnaViewer4 added June 20, 2016
+all: $(OBJS) UCNAnalyzer.exe UCNDisplay.exe UCNDisplay2.exe UCNDisplay3.exe 
+#UCNDisplay3 added June 15, 2016
 UCNDisplay.exe: UCNDisplay.cxx $(OBJS) 
 	$(CXX) -o $@ $(CXXFLAGS) $(ROOTANAINC) $^ $(ROOTANALIBS) $(MIDASLIBS) $(ROOTGLIBS) -lm -lpthread $(RPATH)  -lrt -lutil
 
 UCNDisplay2.exe: UCNDisplay2.cxx $(OBJS) 
+	$(CXX) -o $@ $(CXXFLAGS) $(ROOTANAINC) $^ $(ROOTANALIBS) $(MIDASLIBS) $(ROOTGLIBS) -lm -lpthread $(RPATH)  -lrt -lutil
+
+UCNDisplay3.exe: UCNDisplay3.cxx $(OBJS) 
 	$(CXX) -o $@ $(CXXFLAGS) $(ROOTANAINC) $^ $(ROOTANALIBS) $(MIDASLIBS) $(ROOTGLIBS) -lm -lpthread $(RPATH)  -lrt -lutil
 
 UCNAnalyzer.exe: UCNAnalyzer.cxx $(OBJS) 

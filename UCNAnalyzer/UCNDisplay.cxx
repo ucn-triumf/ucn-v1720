@@ -45,7 +45,7 @@ public:
 
     // Set up a canvas comparing the Q short and Q long values separated by modules
     TFancyHistogramCanvas* v1720_QSQL = 
-      new TFancyHistogramCanvas(anaViewer->fV1720QSQLHistograms, "V1720 - Q Short vs Q Long",9,false);
+      new TFancyHistogramCanvas(anaViewer->fV1720QSQLHistograms, "V1720 - Q Short vs Q Long",8,false);
     AddSingleCanvas(v1720_QSQL);
 
     // Set up a canvas comparing the PSD and Q long value separated by modules

@@ -4,36 +4,58 @@
 #include "TF1.h"
 #include <cmath>
 
+bool moved = true;
+
 TUCNAnaViewer2::TUCNAnaViewer2(){
 
   gStyle->SetOptStat(11111111);
 
-  verbose = 0;
+  verbose = 1;
   numBins = 3600;
 
   // one histogram for events over1 time
-  fV1720TimeHistogram = new TH1D("v1720Time","Time of Events", numBins+1, 0, numBins);
-  fV1720TimeHistogram->SetXTitle("Time (1hr - now in sec)");
+  fV1720TimeHistogram = new TH1D("v1720Time","Time of Events", numBins+1, 0.0, float(numBins));
+  fV1720TimeHistogram->SetXTitle("Time (3600 - now in sec)");
   fV1720TimeHistogram->SetYTitle("Events (Hz)");
   fV1720TimeHistogram->SetDrawOption("e1");
 
   // fill histogram with 0 ?
 
   // initialize variables for calculating Hz
-  time      = 0;
+  time      = 0;  // time is the second interval of the largest time observed so far....
   nextTime = 0;
-  prevTime = {0};
-  currTime = {0};
-  base      = {0};
+  prevTime = {0,0,0,0,
+	      0,0,0,0,
+	      0,0,0,0,
+	      0,0,0,0};
+  currTime = {0,0,0,0,
+	      0,0,0,0,
+	      0,0,0,0,
+	      0,0,0,0};
+  addedTime = {0,0,0,0,
+	       0,0,0,0,
+	       0,0,0,0,
+	       0,0,0,0};
+
+
+
   //dtTime ={0};
   nEvents   = 0;
   nLoop = 0;
   loop = false;
-  first = true;
+  first = {true,true,true,true,
+	   true,true,true,true,
+	   true,true,true,true,
+	   true,true,true,true};
   sec = 250000000;
-  sync = {0};
   refChan = 14;//pick empty channel
 }
+
+  bool incr17thisev[NDPPBOARDS*PSD_MAXNCHAN] = 
+    { false,false,false,false,
+      false,false,false,false,
+      false,false,false,false,
+      false,false,false,false};
 
 TUCNAnaViewer2::~TUCNAnaViewer2(){
 }
@@ -93,79 +115,111 @@ int TUCNAnaViewer2::FindAndFitPulses(TDataContainer& dataContainer){
   // if slow control event, not part of the event rate
   if ( foundabank == false ) return 0;
 
+  // bool incr17thisev[NDPPBOARDS*PSD_MAXNCHAN] = 
+  //{ false,false,false,false,
+  //  false,false,false,false,
+  //  false,false,false,false,
+  //  false,false,false,false};
+
   // grab each subevent
   for (iboard = 0; iboard<NDPPBOARDS; iboard++) {
     for (ichan = 0; ichan < PSD_MAXNCHAN;ichan++) {
       int ich = iboard*8 + ichan;
-      
-      for (isubev = 0;isubev<fDPP[iboard].GetNWaves(ichan);isubev++) {	
+      int NWaves = fDPP[iboard].GetNWaves(ichan);
+      //std::cout<<"iboard="<<iboard<<" ichan="<<ichan<<" ich="<<ich
+      //	       <<" NWaves="<<NWaves<<std::endl;
+      for (isubev = 0;isubev<NWaves;isubev++) {	
 	b  = fDPP[iboard].GetPSD( isubev, ichan );
 	
 	if ( b==NULL) 
 	  continue;
 	
-	// account for time loop
-	currTime[ich] = (ULong64_t)(b->TimeTag);
-	if ((currTime[ich]+base[ich])<prevTime[ich])
-	  base[ich] += 4294967295;
+	currTime[ich] = (ULong64_t)(b->TimeTag)+ addedTime[ich];
+	//currTime[ich] += base[ich];
+	if(first[ich]==true){
+	  time = currTime[ich] + sec;
+	  prevTime[ich] = currTime[ich];
+	  first[ich]=false;
+	}
 
-
-	// check if still behind synchronization clock and adjust
-	//if (iboard==0) refChan=7;
-	//else refChan=15;
-	if ((currTime[ichan]+base[ichan])<currTime[refChan]+base[refChan]){
-	  while ((currTime[ichan]+base[ichan])<currTime[refChan]+base[refChan]){
-	    base[ichan] += 4294967295;
+	if (prevTime[ich]-currTime[ich]>=4294967000)
+	  {
+	    addedTime[ich] += 4294967295;
+	    currTime[ich] += addedTime[ich];
 	  }
-	}
 
-	// check if still behind synchronization clock and adjust
-	//if (ich != 7 && ich != 15){
-	// if ((currTime[ich]+base[ich])<prevTime[refChan]){
-	//  while ((currTime[ich]+base[ich])<prevTime[refChan]){
-	//    base[ich] += 4294967295;
-	//  }
-	// }
-	//}
-	prevTime[ich] = currTime[ich] + base[ich];
-	
-	// if first event to be read, set time
-	if(first) {
-	  time = prevTime[ich];
-	  first = false;
-	}
+	std::cout<<"time(variable) "<<time<<std::endl;
+	std::cout<<"currTime "<<currTime[ich]<<std::endl;
+
+	//	if (currTime[ich]<prevTime[ich]) incr17thisev[ich] = false;
+	//	if ( currTime[ich] < prevTime[ich] && incr17thisev[ich] ==false) {
+	  // std::cout<<"Add 17 second jump for ch="<<ich
+	  //		   <<" base[ch]="<<base[ich]
+	  //	   <<" curr="<<currTime[ich]
+	  //	   <<" prev="<<prevTime[ich]
+	  //	   <<std::endl;
+	//  incr17thisev[ich] = true;
+	// base[ich] += 4294967295;
+	  // currTime[ich] += 4294967295;
+	//  currTime[ich] = (ULong64_t)(b->TimeTag)+base[ich];
+	  // }//
+	//	std::cout<<" iboard="<<iboard
+	//	 <<" ich="<<ich
+	//	 <<" iev="<<isubev<<" / "<<NWaves
+	//	 <<" curtime="<<currTime[ich]
+	//	 <<" base="<<base[ich]
+	//	 <<" prev="<<prevTime[ich]
+	//	 <<" time="<<time
+	//	 <<std::endl;
+
+
 	
 	// if event time is 1 s past current time, then update time and shift all bins back
 	// and rescale the bin so that it is in Hz (in case all dt's are less than 1 sec)
-	if(prevTime[ich] > time + sec) {
-	  while (prevTime[ich]> time +sec ){
+	if(currTime[ich] > time) {
+	  while (currTime[ich] > time ){
+	    std::cout<<"Move bins... time="<<time<<" curTime["<<ich<<"]="<<currTime[ich]<<std::endl;
 	    time += sec;
 	    
-	    for (int i =1; i<numBins+1; i++) {
+	    for (int i =1; i<numBins+2; i++) {
 	      fV1720TimeHistogram->SetBinContent(i,fV1720TimeHistogram->GetBinContent(i+1));
 	      fV1720TimeHistogram->SetBinError(i,fV1720TimeHistogram->GetBinError(i+1));
 	    }
-	    //fV1720TimeHistogram->SetBinContent(numBins, 0.0);
-	    //fV1720TimeHistogram->SetBinError(numBins, 0.0);
+	    //fV1720TimeHistogram->SetBinContent(numBins+1, 0.0);
+	    //fV1720TimeHistogram->SetBinError(numBins+1, 0.0);
 	  }
+	  //first[ich] = true;
+	  //fV1720TimeHistogram->Fill( 3599.5 - float( (int)(time-1-currTime[ich])/sec) );
+	  moved = true;
+
 	}
 	
 	//if ( ich==7 || ich==15)
 	//  fV1720TimeHistogram->Fill(3599 -(int)( (time + sec - prevTime[ich])/sec));
 
-	if (1){
+	//if (1){
 	// find bin that event belongs to relative to time
-	if ( b->ChargeLong - b->ChargeShort > -50.0 &&
-	     b->ChargeLong > 2000.0 && b->ChargeLong < 160000.0 &&
-	     b->ChargeShort > 500.0 && b->ChargeShort < 10000.0 ){
+	//if (1){
+	    // ||( b->ChargeLong - b->ChargeShort > -50.0 &&
+	    // b->ChargeLong > 2000.0 && b->ChargeLong < 160000.0 &&
+	    //		    b->ChargeShort > 500.0 && b->ChargeShort < 10000.0) ){
 	  
 	  //if ( ich == 12 ) {
 	  //if((int)( (time + sec - prevTime[ich])/sec)>0)
-	    fV1720TimeHistogram->Fill(3599 -(int)( (time + sec - prevTime[ich])/sec));
-	    //else 
+	//std::cout<<"Fill bin "<< 3599.5 - float( (int)(time-1-currTime[ich])/sec) 
+	//	 <<" time="<<time
+	//	 <<" currTime["<<ich<<"]="<<currTime[ich]
+	//	 <<std::endl;
+	if (moved = true)
+	  {
+	    fV1720TimeHistogram->Fill( 3599.5 - float( (int)(time-1-currTime[ich])/sec) );
+	    moved = false;
+	  }   
+	//else 
 	    //fV1720TimeHistogram->Fill(3599);
-	}
-	}
+	    //}
+	    //	}
+	prevTime[ich] = currTime[ich];
       } // end filling histogram
     }
   }

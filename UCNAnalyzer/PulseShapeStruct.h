@@ -23,6 +23,8 @@ typedef struct {
   int16_t Length;
 } DPP_Bank_Out_t;
 
+void DPP_Bank_Out_Print(DPP_Bank_Out_t *b);
+
 typedef struct{
   float    fTemp1;
   uint16_t fPres;
@@ -53,7 +55,7 @@ class DPPBankHandler{
   void Init(char * pdata);
 
   /// Get the maximum number of waveforms per channel
-  int GetNEvents(){ return fMaxSubEv; };
+  long GetNEvents(){ return fNTotal; };
 
   /// Make a method to clear the number of waveforms
   /// for resetting on start of new event
@@ -111,7 +113,7 @@ class DPPBankHandler{
   bool             fFirst;                   /// check if first event loaded
   char *           fData;                    /// pointer to memory of start of bank
   int              fMaxSubEv;                /// maximum number of sub events per channel
-  int              fNTotal;                  /// total number of waveforms
+  long             fNTotal;                  /// total number of waveforms
   int              fNWaves[PSD_MAXNCHAN];    /// number of waveforms by channel
   DPP_Bank_Out_t ** fDPPInfo[PSD_MAXNCHAN];  /// [NumChan][NumSubEv]
   uint16_t **      fWaveforms[PSD_MAXNCHAN]; /// [NumChan][NumSubEv]

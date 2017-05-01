@@ -25,6 +25,7 @@ class TUCNAnaManager {
   int ProcessMidasEvent(TDataContainer& dataContainer);
   int FindAndFitPulses(TDataContainer& dataContainer);
   void EndRun(int run, int time);
+  int GetVoltage(int i) {return tMVolt[i];}//added June 17, 2016
 
  private:
   
@@ -47,6 +48,7 @@ class TUCNAnaManager {
   ULong_t tEntry;
   ULong_t tEvent;
   ULong64_t tTimeE;
+  ULong64_t tTimeStamp;
   Short_t tChannel;
   Short_t tLength;
   //Short_t tPulse[1000];
@@ -95,5 +97,7 @@ class TUCNAnaManager {
   uint32_t numEvents,numSamples;
   int      verbose;
   DPPBankHandler fDPP[NDPPBOARDS];
+
+  //int GetVoltage(int i) {return tMVolt[i];}//added June 17, 2016
 
 };

@@ -34,7 +34,7 @@ class TUCNAnaViewer {
   ULong_t  tTime;
   Short_t tChannel;
   Short_t tLength;
-  //Short_t tPulse[1000];
+  Short_t tPulse[1000];
   Float_t tPSD;
   Short_t tChargeL;
   Short_t tChargeS;
@@ -43,7 +43,7 @@ class TUCNAnaViewer {
   // runtime variables
   int index;
   DPP_Bank_Out_t *b;
-  //uint16_t *wf;
+  uint16_t *wf;
   int nEvents;
   int iboard, ichan, isubev;
 

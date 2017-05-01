@@ -16,15 +16,14 @@
 #include <stdio.h>
 #include <iostream>
 
-#include "TRootanaDisplay.hxx"
-
 #include "TH1D.h"
 #include "TH2D.h"
 
 #include "TFancyHistogramCanvas.hxx"
 #include "TV1720Histograms.h"
-
 #include "TUCNAnaViewer2.h"
+
+#include "TRootanaDisplay.hxx"
 
 class UCNDisplay2: public TRootanaDisplay {
   
@@ -37,6 +36,7 @@ public:
 
   UCNDisplay2() {
     SetDisplayName("UCN Display");    
+    //SetNumberSkipEvent(1000);
   };
   
 
@@ -50,6 +50,7 @@ public:
 
     anaViewer = new TUCNAnaViewer2();
     AddSingleCanvas("V1720 Time");
+    SetNumberSkipEvent(1000);
   };
 
   ~UCNDisplay2() {};

@@ -36,8 +36,7 @@ class TUCNAnaViewer2 {
   ULong64_t time, nextTime,sec;
   ULong64_t prevTime[PSD_MAXNCHAN*NDPPBOARDS];
   ULong64_t currTime[PSD_MAXNCHAN*NDPPBOARDS];
-  ULong64_t base    [PSD_MAXNCHAN*NDPPBOARDS];
-  ULong64_t sync    [NDPPBOARDS];
+  ULong64_t addedTime[PSD_MAXNCHAN*NDPPBOARDS];
   //ULong64_t dtTime[PSD_MAXNCHAN*NDPPBOARDS];
   //ULong64_t tminThisEvent[PSD_MAXNCHAN*NDPPBOARDS];
   //ULong64_t tmaxThisEvent[PSD_MAXNCHAN*NDPPBOARDS];
@@ -45,7 +44,7 @@ class TUCNAnaViewer2 {
   int      verbose;
   int refChan;
   bool loop;
-  bool first;
+  bool first[PSD_MAXNCHAN*NDPPBOARDS];
   DPPBankHandler fDPP[NDPPBOARDS];
 
 };

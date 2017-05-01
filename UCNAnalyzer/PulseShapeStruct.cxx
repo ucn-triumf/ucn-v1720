@@ -1,5 +1,23 @@
 #include "PulseShapeStruct.h"
 
+void DPP_Bank_Out_Print(DPP_Bank_Out_t *b){
+
+  std::cout<<"DPP_Bank_Out_Print(): "<<std::endl;
+  std::cout<< "  TimeTag    ="  << b->TimeTag	 	   
+	   << " Channel    =" << b->Channel	 	   
+	   << " ChargeShort=" << b->ChargeShort   
+	   << " ChargeLong =" << b->ChargeLong	 	   
+	   << " Baseline   =" << b->Baseline	 	   
+	   << " Pur	  =" << b->Pur	 
+	   << " Length     =" << b->Length<<std::endl;   
+
+  //std::cout<<"size of TimeTag "<<(sizeof)b->TimeTag<<std::endl;
+
+
+  return;
+}
+
+
 // initialize structures
 void DPPBankHandler::Init( char* pdata){
   fData = pdata;
@@ -48,12 +66,13 @@ void DPPBankHandler::Init( char* pdata){
 
   uint32_t *value32;
   value32   = (uint32_t*)pdata;
-  int NumEvents = *value32;
+  fNTotal = (long) *value32;
   pdata += sizeof(uint32_t);
   DPP_Bank_Out_t * b;
 
   // organize data into bank structure for readout
-  for (int iev = 0; iev<NumEvents; iev++){
+  if (verbose)  std::cout<<"fNTotal here ="<<fNTotal<<std::endl;
+  for (int iev = 0; iev<fNTotal; iev++){
     b = (DPP_Bank_Out_t*)pdata;
     pdata+= sizeof(DPP_Bank_Out_t);
     uint16_t * wf = (uint16_t*)pdata;
