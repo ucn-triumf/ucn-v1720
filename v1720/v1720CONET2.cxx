@@ -113,12 +113,19 @@ const char * v1720CONET2::config_str_board[] = {\
     "[5] 16",\
     "[6] 16",\
     "[7] 16",\
-    "Baseline Threshold = INT : 100",\
+    "Baseline Threshold = INT : 100",	\
     NULL
 };
 
 const char v1720CONET2::history_settings[][NAME_LENGTH] = { "eStored", "busy" };
 
+int BaselineSetValue;                  //added May 26, 2016//the target baseline that all other channels offset themselves to match
+int Base[8]={0,0,0,0,0,0,0,0};         //added May 26, 2016//the baseline of the channel before an offset is applied (used in offset eqn)
+int EventCount=0;                      //added May 26, 2016//counter to display how many times the FillEventBuffer function has been called
+int HadEvent_m0[8]={0,0,0,0,0,0,0,0};  //added May 27, 2016//used to determine how many events channel i of module 1 has recieved
+int HadEvent_m1[8]={0,0,0,0,0,0,0,0};  //added May 27, 2016//used to determine how many events channel i of module 2 has recieved
+int verb=0;
+void DCOFFSETCALC(int sum1[8], int sum0[8], int moduleID, int NumEvents1[8]);
 
 /**
  * \brief   Constructor for the module object
@@ -526,7 +533,7 @@ bool v1720CONET2::FillEventBank(char * pevent)
     cout << "Error: trying to ReadEvent disconnected board" << endl;
     return false;
   }
-
+  
   // Double checking that board is ready to read
   //DWORD vmeStat;
   //this->ReadReg(V1720_VME_STATUS, &vmeStat);
@@ -541,7 +548,9 @@ bool v1720CONET2::FillEventBank(char * pevent)
   DWORD NTotal =0;
   uint32_t NumEvents[MaxNChannels];
   
-
+   int sum0[8]={0,0,0,0,0,0,0,0};//added May 26, 2016
+   int sum1[8]={0,0,0,0,0,0,0,0};//added May 30, 2016 //may not need
+ 
 
   // read in data
   ret = CAEN_DGTZ_ReadData(_device_handle, CAEN_DGTZ_SLAVE_TERMINATED_READOUT_MBLT, buffer, &BufferSize);
@@ -568,10 +577,11 @@ bool v1720CONET2::FillEventBank(char * pevent)
       continue;
     NTotal+=NumEvents[ch];
   }
-  
+ 
+
   // >>> create data bank
   sprintf(bankName, "W2%02d", this->_moduleID);
-  bk_create(pevent, bankName, TID_DWORD, &pdata);
+  bk_create(pevent, bankName, TID_DWORD, (void**)&pdata);
   *pdata++ = NTotal;
   
   for(ch=0; ch<MaxNChannels; ch++) {
@@ -584,11 +594,16 @@ bool v1720CONET2::FillEventBank(char * pevent)
       /* Channel */
       out.Channel = ch;
       /* Time Tag */
-      out.TimeTag = Events[ch][ev].TimeTag;
+      out.TimeTag = Events[ch][ev].TimeTag+Events[ch][ev].Extras;
       /* Energy */
       out.ChargeShort= Events[ch][ev].ChargeShort;
       out.ChargeLong = Events[ch][ev].ChargeLong;
       out.Baseline =  Events[ch][ev].Baseline;
+
+      if (this->_moduleID == 0) sum0[ch]=sum0[ch]+out.Baseline;///////added May 26, 2016
+      if (this->_moduleID == 1) sum1[ch]=sum1[ch]+out.Baseline;
+	
+      //std::cout<<"Channel: "<<ch<<"Event: "<<ev<<"Baseline: "<<Events[ch][ev].Baseline<<endl;
       out.Pur = Events[ch][ev].Pur;
 	
       Event = &Events[ch][ev];
@@ -624,9 +639,129 @@ bool v1720CONET2::FillEventBank(char * pevent)
       curev++;	   
     }
   }
-  
-  bk_close(pevent,pdata);
+  int NumEvents1[8]={0,0,0,0,0,0,0,0};
+  for (ch=0; ch<8; ch++)
+    {
+      NumEvents1[ch]=(int)(NumEvents[ch]);
+    }
+    
+  //DCOFFSETCALC(sum1, sum0, this->_moduleID, NumEvents1);
+  /* if (this->_moduleID==0)////////////////////////////added May 27, 2016
+    {
+      int returnval;
+      if (verb ==1)
+	{
+	  std::cout<<"ModuleID: "<<this->_moduleID<<endl;
+	  std::cout<<"EventCount: "<<EventCount<<endl;
+	}
+   for (ch=0;ch<MaxNChannels; ch++)////////added May 26, 2016
+    {
+      // std::cout<<"NumEvents: "<<NumEvents[ch]<<endl;
+      if (NumEvents[ch]!=0) HadEvent_m0[ch]++;
+      if (verb ==1) if (NumEvents[ch] != 0) std::cout<<"Base: "<<sum0[ch]/NumEvents[ch]<<endl;
+      if(NumEvents[ch]!=0 && HadEvent_m0[ch]==1)
+	{
+	  Base[ch]=(int)(sum0[ch]/NumEvents[ch]);//gets the average basline of the channel
+	                                        //and sets that as Base[ch]
+	  if (verb ==1) std::cout<<"Channel: "<<ch<<" Base: "<<Base[ch]<<endl;
+	}
+    else if (NumEvents[ch]!=0 && abs(BaselineSetValue - ((int)(sum0[ch]/NumEvents[ch]))) >= 20)
+	{
+	  std::cout<<"Channel "<<ch<<" of board "<<this->_moduleID<<" was weird"<<endl;
+	  Base[ch]=(int)((sum0[ch]/NumEvents[ch]));//gets the average basline of the channel
+	                                         //and sets that as Base[ch]
+	  if (verb ==1) std::cout<<"Channel: "<<ch<<" Base: "<<Base[ch]<<endl;
+	   config.DCoffset[ch] =(int)(13.37*(Base[ch]-BaselineSetValue)+32767.5);
+	   returnval |= CAEN_DGTZ_SetChannelDCOffset(_device_handle, ch, config.DCoffset[ch]);
+	    
+	}
+      if (ch==0 && HadEvent_m0[0]==1)//sets the target baseline for all offsets to adjust to
+	{
+	      BaselineSetValue = Base[ch];
+	      if (verb==1)
+		{
+		  std::cout<<"BaselineSetValue: "<<BaselineSetValue<<endl;
+		  std::cout<<"Module ID: "<<this->_moduleID<<endl;
+		}
+	}
+    }
+    int z=0;
+    for (z=0; z<MaxNChannels; z++)//////////added May 26, 2016
+    {
+      if (Base[z]!=0 && HadEvent_m0[z]==2)
+	{ 
+	  config.DCoffset[z] =(int)(13.37*(Base[z]-BaselineSetValue)+32767.5);//derived equation for calculating DC Offset
+	  returnval |= CAEN_DGTZ_SetChannelDCOffset(_device_handle, z, config.DCoffset[z]);//this is where the DC Offset is actually changed
+	}
+      if (verb ==1) std::cout<<"Channel: "<<z<<" DC Offset: "<<config.DCoffset[z]<<endl;
+    }
+    }
 
+  if (this->_moduleID==1)//added May 27, 2016 //have separate if statements for each module allows the offsets for one module to change
+                                              //while on the other module they stay the same
+    {
+ int returnval;
+ if (verb ==1)
+   {
+     std::cout<<"ModuleID: "<<this->_moduleID<<endl;
+     std::cout<<"EventCount: "<<EventCount<<endl;
+   }
+   for (ch=0;ch<MaxNChannels; ch++)////////added May 26, 2016
+    {
+      // std::cout<<"NumEvents: "<<NumEvents[ch]<<endl;
+      if (NumEvents[ch]!=0) HadEvent_m1[ch]++;
+      if (verb ==1)
+	{
+	  if (NumEvents[ch]!=0) std::cout<<"BaselineSetValue: "<<BaselineSetValue<<endl;
+	  if (NumEvents[ch] != 0) std::cout<<"Base: "<<sum1[ch]/NumEvents[ch]<<endl;
+	}
+      if((NumEvents[ch]!=0 && HadEvent_m1[ch]==1))
+	{
+	  Base[ch]=(int)((sum1[ch]/NumEvents[ch]));//gets the average basline of the channel
+	                                         //and sets that as Base[ch]
+	  if (verb ==1)  std::cout<<"Channel: "<<ch<<" Base: "<<Base[ch]<<endl;
+	}
+      else if (NumEvents[ch]!=0 && abs(BaselineSetValue - ((int)(sum1[ch]/NumEvents[ch]))) >= 20)
+	{
+	  Base[ch]=(int)((sum1[ch]/NumEvents[ch]));//gets the average basline of the channel
+	                                         //and sets that as Base[ch]
+	  if (verb ==1) std::cout<<"Channel: "<<ch<<" Base: "<<Base[ch]<<endl;
+	   config.DCoffset[ch] =(int)(13.37*(Base[ch]-BaselineSetValue)+32767.5);
+	   returnval |= CAEN_DGTZ_SetChannelDCOffset(_device_handle, ch, config.DCoffset[ch]);
+	    
+	}
+    }
+
+    int z=0;
+    for (z=0; z<MaxNChannels; z++)//////////added May 26, 2016
+    {
+      if ((Base[z]!=0 && HadEvent_m1[z]==1))
+	{ 
+	  config.DCoffset[z] =(int)(13.37*(Base[z]-BaselineSetValue)+32767.5);
+	  returnval |= CAEN_DGTZ_SetChannelDCOffset(_device_handle, z, config.DCoffset[z]);
+	}
+      if (verb ==1) std::cout<<"Channel: "<<z<<" DC Offset: "<<config.DCoffset[z]<<endl;
+    }
+    }*/
+  bk_close(pevent,pdata);
+  /*  EventCount++;/////////added May 26, 2016
+  if(verb ==1)
+    {
+      if (this->_moduleID==0)
+	{
+	  for (ch=0; ch<8; ch++)
+	    {
+	      std::cout<<"had event "<<ch<<": "<<HadEvent_m0[ch]<<endl;
+	    }
+	}
+      if (this->_moduleID==1)
+	{
+	  for (ch=0; ch<8; ch++)
+	    {
+	      std::cout<<"had event "<<ch<<": "<<HadEvent_m1[ch]<<endl;
+	    }
+	}
+	}*/
   return true;
 }
 
@@ -774,6 +909,13 @@ int v1720CONET2::InitializeForAcq()
 {
   CAEN_DGTZ_ErrorCode ret;
   
+  uint32_t reg, reg2;
+  ret = CAEN_DGTZ_ReadRegister(_device_handle, 0x8000, &reg);
+  ret = CAEN_DGTZ_WriteRegister(_device_handle, 0x8000, (reg | (1 << 17)));
+  ret = CAEN_DGTZ_ReadRegister(_device_handle, 0x8080, &reg2);
+  ret = CAEN_DGTZ_WriteRegister(_device_handle, 0x8080, (reg2 | (1<<7)));
+
+
   if (verbose) cout << GetName() << "::InitializeForAcq()" << endl;
 
   // check if the ODB settings are loaded
@@ -816,7 +958,7 @@ int v1720CONET2::InitializeForAcq()
                                                            // Oscilloscope mode)
   DPPConfig.Params.SaveWaveforms = config.savewaveforms;
   DPPConfig.Params.ChannelMask = config.channel_mask;      // Channel enable mask
-  DPPConfig.Params.EventAggr = 0;//1024;//0;//1024;                          // number of events in one aggregate (0=automatic)
+  DPPConfig.Params.EventAggr = 255;//0;// 255;// 512;//1024;//0;//1024;                          // number of events in one aggregate (0=automatic)
   DPPConfig.Params.PulsePolarity = CAEN_DGTZ_PulsePolarityNegative; // Pulse Polarity (this parameter can be 
                                                                     // individual)
   for(int ch=0; ch<8; ch++) {
@@ -829,7 +971,7 @@ int v1720CONET2::InitializeForAcq()
        4 -> 32samp
        5 -> 64samp
        6 -> 128samp */
-    DPPConfig.DPPParams.nsbl[ch]  = config.DPPnsbl[ch];      
+    DPPConfig.DPPParams.nsbl[ch]  = config.DPPnsbl[ch];   
     DPPConfig.DPPParams.lgate[ch] = config.DPPLongGate[ch];    // Long Gate Width (N*4ns)
     DPPConfig.DPPParams.sgate[ch] = config.DPPShortGate[ch];   // Short Gate Width (N*4ns)
     DPPConfig.DPPParams.pgate[ch] = config.DPPPregateWidth[ch];// Pre Gate Width (N*4ns) also known as gate offset
@@ -905,8 +1047,9 @@ int v1720CONET2::InitializeForAcq()
 
   // Set how many events to accumulate in the board memory before being available for readout
   // DPPConfig.Params.EventAggr==0 - let the board decide
-  if ( config.sw_trig_mode != 0 ){
+  if ( config.sw_trig_mode != 0 || 1 ){
     ret = CAEN_DGTZ_SetDPPEventAggregation(_device_handle, DPPConfig.Params.EventAggr, 0);
+    //   re = CAEN_DGTZ_SetDPPEventAggregation(_device_handle, DPPConfig.Params.EventAggr, 512);
     if (ret != CAEN_DGTZ_Success) {
       printf("<v1720CONET2::InitializeForAcq> Error in CAEN_DGTZ_SetDPPEventAggregation %d\n",ret);
       return (int)ret;
@@ -1061,6 +1204,12 @@ int v1720CONET2::InitializeForAcq()
     return (int)retval;
   }
   
+  
+  // WriteReg(0x8004, 1);
+  WriteReg(0x800C, 9);
+  
+
+
   PrintSettings();
   _settings_touched = false;
 

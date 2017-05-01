@@ -23,6 +23,7 @@ TUCNAnaManager::TUCNAnaManager(int run, int time){
   tUCN=new TTree("tUCN","Event");
   tUCN->Branch("tEntry",    &tEntry,    "tEntry/l");
   tUCN->Branch("tTimeE",    &tTimeE,    "tTimeE/l");
+  tUCN->Branch("tTimeStamp",    &tTimeStamp,    "tTimeStamp/l");
   tUCN->Branch("tChannel",  &tChannel,  "tChannel/s");
   tUCN->Branch("tPSD",      &tPSD,      "tPSD/f");
   tUCN->Branch("tChargeL",  &tChargeL,  "tChargeL/s");
@@ -88,6 +89,10 @@ void TUCNAnaManager::EndRun(int run, int time){
   tRunTran->Fill();
 }
 
+#include <sys/time.h>
+
+long int total_pulse_cumul = 0;
+uint32_t LastTime;  
 
 // Analyze Data and Save to TTree
 int TUCNAnaManager::FindAndFitPulses(TDataContainer& dataContainer){
@@ -168,6 +173,9 @@ int TUCNAnaManager::FindAndFitPulses(TDataContainer& dataContainer){
     } // end looping through banks
     
     // grab each subevent
+
+    int haveCh[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+    long int total_pulses = 0;
     for (iboard = 0; iboard<NDPPBOARDS; iboard++) {
       for (ichan = 0; ichan < PSD_MAXNCHAN;ichan++) {
 	for (isubev = 0;isubev< fDPP[iboard].GetNWaves(ichan) ;isubev++) {
@@ -180,7 +188,8 @@ int TUCNAnaManager::FindAndFitPulses(TDataContainer& dataContainer){
 		       <<" ev="<<isubev<<std::endl;  
 	    continue;
 	  }
-	  
+	  total_pulses++;
+	  //continue;
 	  
 	  // event information
 	  tEvent    = isubev;
@@ -190,6 +199,9 @@ int TUCNAnaManager::FindAndFitPulses(TDataContainer& dataContainer){
 	  if((currEvent[tChannel]+base[tChannel])<prevEvent[tChannel])
 	    base[tChannel] += 4294967295;
 
+	  if(tChannel < 16)
+	    haveCh[tChannel] = 1;
+	  
 	  // check if still behind synchronization clock and adjust
 	  if ((currEvent[ichan]+base[ichan])<currEvent[refChan]+base[refChan]){
 	    while ((currEvent[ichan]+base[ichan])<currEvent[refChan]+base[refChan]){
@@ -199,6 +211,7 @@ int TUCNAnaManager::FindAndFitPulses(TDataContainer& dataContainer){
 	  prevEvent[tChannel] = currEvent[tChannel] + base[tChannel];
 	  // time stamps are in 4ns intervals from start of run
 	  tTimeE = prevEvent[tChannel]*4;
+	  tTimeStamp = sample.GetTimeStamp();
 	  tChargeL  = b->ChargeLong;
 	  tChargeS  = b->ChargeShort;
 	  tPSD      = ((Float_t)(tChargeL)-(Float_t)(tChargeS))/((Float_t)(tChargeL));
@@ -221,6 +234,33 @@ int TUCNAnaManager::FindAndFitPulses(TDataContainer& dataContainer){
       }
     } // end filling event tree tUCN
 
+    //for(int ii = 0; ii < 16; ii++){
+    //if(haveCh[ii]) std::cout << ii << " ";
+    //  }
+    //std::cout << " tot pulses: " << total_pulses << std::endl;
+
+
+    static bool myfirsttime = true;
+    if(myfirsttime){
+      LastTime = sample.GetTimeStamp();
+      myfirsttime = false;
+    }
+
+    total_pulse_cumul += 	total_pulses;			
+    double dtime = (double)( sample.GetTimeStamp() - LastTime);
+
+    //std::cout << dtime << "dtime " << std::endl;
+    if(dtime > 10.0){
+      std::cout << "Total pulse rate " << ((double) total_pulse_cumul) / ((double)dtime *1000.0) << " kHz" <<
+	" " << total_pulse_cumul << " " << dtime << std::endl;
+      total_pulse_cumul = 0;
+      LastTime = sample.GetTimeStamp();
+
+
+    }
+
+
+    
     // check for HV monitor event
   } else if (sample.GetEventId() == 0x001e) {
     

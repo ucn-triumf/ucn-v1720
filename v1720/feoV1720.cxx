@@ -178,10 +178,10 @@ BOOL frontend_call_loop = FALSE;
 //! a frontend status page is displayed with this frequency in ms
 INT display_period = 000;
 //! maximum event size produced by this frontend
-INT max_event_size = 30000000;
+INT max_event_size = 100000000;
 //INT max_event_size = 4194304;
 //! maximum event size for fragmented events (EQ_FRAGMENTED)
-INT max_event_size_frag = 5 * 1024 * 1024;
+INT max_event_size_frag = 200 * 1024 * 1024;
 //5 * 409600;//5 * 1024 * 1024;
 //! buffer size to hold events
 INT event_buffer_size = 10 * max_event_size;
@@ -345,6 +345,8 @@ INT frontend_init(){
         switch(ov1720.back().Connect()){
         case v1720CONET2::ConnectSuccess:
           nActive++;
+        printf("InitializeForAcq Link %d, Board %d\n", iLink, iBoard);
+	  ov1720.back().InitializeForAcq();
           break;
         case v1720CONET2::ConnectErrorCaenComm:
         case v1720CONET2::ConnectErrorTimeout:
@@ -427,7 +429,8 @@ INT frontend_init(){
   }
   //ov1720.back().SaveSettings();
   printf(">>> End of Init. %d active v1720. Expected %d\n\n", nActive, nExpected);
-ov1720.back().InitializeForAcq();
+   
+  //ov1720.back().InitializeForAcq();
   if(nActive == nExpected){
     set_equipment_status(equipment[0].name, "Initialized", "#00ff00");
   }
@@ -631,22 +634,25 @@ extern "C" INT poll_event(INT source, INT count, BOOL test) {
 
     //printf("poll_event source=%d count=%d test=%d\n",source, count, test);
     for (i = 0; i < count; i++) {
-
+      
       //read the vme status register and check if event ready
-      //bool evtReady = false;
-      bool evtReady = true;
+      bool evtReady = false;
+      //bool evtReady = true;
       for (itv1720 = ov1720.begin(); itv1720 != ov1720.end(); ++itv1720){
-
+	
 	itv1720->ReadReg(V1720_VME_STATUS, &vmeStat);
-
+	
 	//if (vmeStat !=0x8) printf(" vmeStat=%d\n",vmeStat);
         if((!test) && (vmeStat != 0x8)) 
           fflush(stdout);
-       
-        if(!(vmeStat & 0x1))
-	  evtReady = false;
-      }	
+	
+        //if( !(vmeStat & 0x1) )
+	//  evtReady = false;
+	if( vmeStat & 0x1 )
+	  evtReady = true;
 
+      }	
+      
       //If event not ready or we're in test phase, keep looping     
       if (evtReady==true && !test)
         return 1;
@@ -712,6 +718,10 @@ INT read_trigger_event(char *pevent, INT off) {
     gettimeofday(&tv,0);
     suseconds_t usStart = tv.tv_usec;
 #endif
+
+    // Try forcing a flushing of data buffers, so we get data from all channels for each event...
+    // itv1720->WriteReg(0x8040, 1);
+    //usleep(100);
 
     // >>> Fill Event bank
     itv1720->FillEventBank(pevent);
