@@ -54,19 +54,19 @@ public:
     
     TFancyHistogramCanvas* v1720_waveform = 
       new TFancyHistogramCanvas(anaViewer->fV1720Waveform, "V1720 Waveform",9,false);
-    AddSingleCanvas(v1720_waveform);
+      AddSingleCanvas(v1720_waveform);
 
-     TFancyHistogramCanvas * v1720_CLQEvNum = new TFancyHistogramCanvas(anaViewer->fV1720CLQEvNum, "V1720 CLQvsEvNum", 9, false);
-     AddSingleCanvas(v1720_CLQEvNum);
+    //  TFancyHistogramCanvas * v1720_CLQEvNum = new TFancyHistogramCanvas(anaViewer->fV1720CLQEvNum, "V1720 CLQvsEvNum", 9, false);
+    // AddSingleCanvas(v1720_CLQEvNum);
 
     TFancyHistogramCanvas * v1720_QLQL = new TFancyHistogramCanvas(anaViewer->fV1720QLQL, "V1720 QLvsQL", 9, false);
     AddSingleCanvas(v1720_QLQL);
 
-    TFancyHistogramCanvas * v1720_QSQS = new TFancyHistogramCanvas(anaViewer->fV1720QSQS, "V1720 QSvsQS", 9, false);
-    AddSingleCanvas(v1720_QSQS);
+ TFancyHistogramCanvas * v1720_QSQS = new TFancyHistogramCanvas(anaViewer->fV1720QSQS, "V1720 QSvsQS", 9, false);
+   AddSingleCanvas(v1720_QSQS);
 
-    TFancyHistogramCanvas * v1720_CSQEvNum = new TFancyHistogramCanvas(anaViewer->fV1720CSQEvNum, "V1720 CSQvsEvNum", 9, false);
-    AddSingleCanvas(v1720_CSQEvNum);
+    // TFancyHistogramCanvas * v1720_CSQEvNum = new TFancyHistogramCanvas(anaViewer->fV1720CSQEvNum, "V1720 CSQvsEvNum", 9, false);
+    // AddSingleCanvas(v1720_CSQEvNum);
   };
   
   ~UCNDisplay3() {};

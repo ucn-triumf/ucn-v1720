@@ -26,8 +26,8 @@ class TUCNAnaViewer3 {
   
   /// Blah, make histograms public; 
   TV1720Waveform* fV1720Waveform;
-  TV1720CLQEvNum* fV1720CLQEvNum;
-  TV1720CSQEvNum* fV1720CSQEvNum;
+  //TV1720CLQEvNum* fV1720CLQEvNum;
+  //TV1720CSQEvNum* fV1720CSQEvNum;
   TV1720QLQL * fV1720QLQL;
   TV1720QSQS * fV1720QSQS;
   

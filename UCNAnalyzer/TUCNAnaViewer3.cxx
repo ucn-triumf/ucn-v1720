@@ -6,14 +6,19 @@
 #include "time.h"
 #include <algorithm>
 
+#include "TCanvas.h"
+#include "TTree.h"
+
+#include "TV1720WaveformDisplay.h"
+
 TUCNAnaViewer3::TUCNAnaViewer3(){
   //fUCNEvent = NULL;
   verbose = 0;
 
   // event histograms for runtime window
   fV1720Waveform = new TV1720Waveform();
-  fV1720CLQEvNum = new TV1720CLQEvNum();
-  fV1720CSQEvNum = new TV1720CSQEvNum();
+  //fV1720CLQEvNum = new TV1720CLQEvNum();
+  //fV1720CSQEvNum = new TV1720CSQEvNum();
   fV1720QLQL = new TV1720QLQL();
   fV1720QSQS = new TV1720QSQS();
 
@@ -198,7 +203,6 @@ int TUCNAnaViewer3::FindAndFitPulses(TDataContainer& dataContainer/*, int q*/){
 			if ( ql!=0.0 ) tPSD = ( ql - qs ) / ql ;
 			
 			// fill histograms
-			std::cout<<"Passing to UpdateHistograms"<<std::endl;
 			time_t tt=sample.GetTimeStamp();
 			int timet = sample.GetTimeStamp();
 			std::cout<<"timet "<<timet<<std::endl;
@@ -218,12 +222,13 @@ int TUCNAnaViewer3::FindAndFitPulses(TDataContainer& dataContainer/*, int q*/){
 			  }
 			else 
 			  {
-			    fV1720Waveform->UpdateHistogram(iboard, ichan, wf, b->Length, htitle);
+			    			std::cout<<"Passing to UpdateHistograms"<<std::endl;
+						fV1720Waveform->UpdateHistogram(iboard, ichan, wf, b->Length,htitle);
 			  }
-			fV1720CLQEvNum->UpdateHistogram(iboard, ichan, QLDifference, nEvents, htitle);
+			//fV1720CLQEvNum->UpdateHistogram(iboard, ichan, QLDifference, nEvents, htitle);
 			fV1720QLQL->UpdateHistogram(iboard, ichan, qlCalculated, QLBoard, nEvents);
 			fV1720QSQS->UpdateHistogram(iboard, ichan, qsCalculated, QSBoard, nEvents);
-			fV1720CSQEvNum->UpdateHistogram(iboard, ichan, QSDifference, nEvents, htitle);
+			//	fV1720CSQEvNum->UpdateHistogram(iboard, ichan, QSDifference, nEvents, htitle);
 
 		      }//if (b->length != 0)
 		  }//if (b->length)

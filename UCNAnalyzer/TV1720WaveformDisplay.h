@@ -4,9 +4,16 @@
 #include <string>
 #include "THistogramArrayBase.h"
 #include "TH2.h"
+#include "TH1D.h"
+#include "TF1.h"
 #include <vector>
 
+#include "TCanvas.h"
+#include "TTree.h"
+
 #include "TVConstants.h"
+
+#include "time.h"
 
 class TV1720Waveform : public THistogramArrayBase//added June 10, 2016
 {
@@ -16,16 +23,17 @@ class TV1720Waveform : public THistogramArrayBase//added June 10, 2016
 
   void UpdateHistograms(TDataContainer&){};
   void UpdateHistogram(int board, int chan, uint16_t * wf, int tLength,
-		       char * ctag );
+		       char * ctag);
 
   void BeginRun(int transition, int run, int time);
   
   void EndRun(int transition, int run, int time);
 
   void CreateHistograms();
-};
+  };
 
-class TV1720CLQEvNum : public THistogramArrayBase//added Aug 9, 2016
+
+/*class TV1720CLQEvNum : public THistogramArrayBase//added Aug 9, 2016
 {
  public: 
   TV1720CLQEvNum();
@@ -40,9 +48,9 @@ class TV1720CLQEvNum : public THistogramArrayBase//added Aug 9, 2016
   void EndRun(int transition, int run, int time);
 
   void CreateHistograms();
-};
+  };*/
 
-class TV1720CSQEvNum : public THistogramArrayBase//added Aug 9, 2016
+/*class TV1720CSQEvNum : public THistogramArrayBase//added Aug 9, 2016
 {
  public: 
   TV1720CSQEvNum();
@@ -57,7 +65,7 @@ class TV1720CSQEvNum : public THistogramArrayBase//added Aug 9, 2016
   void EndRun(int transition, int run, int time);
 
   void CreateHistograms();
-};
+  };*/
 
 class TV1720QLQL : public THistogramArrayBase//added Aug 10, 2016
 {
@@ -89,5 +97,5 @@ class TV1720QSQS : public THistogramArrayBase//added Aug 10, 2016
   void EndRun(int transition, int run, int time);
 
   void CreateHistograms();
-};
+  };
 #endif
