@@ -17,8 +17,6 @@ TUCNAnaViewer3::TUCNAnaViewer3(){
 
   // event histograms for runtime window
   fV1720Waveform = new TV1720Waveform();
-  //fV1720CLQEvNum = new TV1720CLQEvNum();
-  //fV1720CSQEvNum = new TV1720CSQEvNum();
   fV1720QLQL = new TV1720QLQL();
   fV1720QSQS = new TV1720QSQS();
 
@@ -29,14 +27,21 @@ TUCNAnaViewer3::~TUCNAnaViewer3(){
 
 
 // Analyze Data and Save to TTree
-int TUCNAnaViewer3::FindAndFitPulses(TDataContainer& dataContainer/*, int q*/){
+int TUCNAnaViewer3::FindAndFitPulses(TDataContainer& dataContainer, char CutChoice, float PSDMax, float PSDMin){
+
+  // Loop over all the data, fill the histograms and and find histograms.
+  TMidasEvent sample = dataContainer.GetMidasEvent();
+
+
+  std::string banklist(sample.GetBankList());
+  //std::cout << banklist << std::endl;
+  if(banklist.find("W20") == std::string::npos) return 1;
 
   std::cout<<"==================================================================================="<<std::endl;
   std::cout<<"=== Find and FitPulses ============================================================"<<std::endl;
 
 
-  // Loop over all the data, fill the histograms and and find histograms.
-  TMidasEvent sample = dataContainer.GetMidasEvent();
+
 
   // output bank block information
   if(verbose) {
@@ -56,6 +61,7 @@ int TUCNAnaViewer3::FindAndFitPulses(TDataContainer& dataContainer/*, int q*/){
     printf("\n");
   }
 
+
   TMidas_BANK32 * bank = NULL;
   char * pdata = sample.GetData();
 
@@ -70,6 +76,8 @@ int TUCNAnaViewer3::FindAndFitPulses(TDataContainer& dataContainer/*, int q*/){
   // loop over the all data for one event and organize said data
   for(sample.IterateBank32(&bank,&pdata);bank!=NULL&&pdata!=NULL;
       sample.IterateBank32(&bank,&pdata)) {
+
+    //if(bank->fName != "W201" || bank->fName != "W200") continue;
     
     sscanf(&bank->fName[3],"%1d", &iboard);
     if ( iboard<0 || iboard >= NDPPBOARDS){
@@ -79,24 +87,13 @@ int TUCNAnaViewer3::FindAndFitPulses(TDataContainer& dataContainer/*, int q*/){
     } 
     if(verbose)
       std::cout<<"<TUCNAnaViewer3> board="<<iboard<<std::endl;
-    
+
     fDPP[iboard].Init( pdata );
-    
+
   } // end looping through banks
+  std::cout<<"looped through banks"<<std::endl;
   int g=0;
-  char CutChoice;
-  float PSDMax;
-  float PSDMin;
-  std::cout<<"Would you like to view wave froms in a specific PSD range (y=Yes n=No)?"<<std::endl;
-  std::cin>>CutChoice;
-  if (CutChoice == 'y')
-    {
-      std::cout<<"Enter the max PSD value of your cut"<<std::endl;
-      std::cin>>PSDMax;
-      std::cout<<"Enter the min PSD value of your cut"<<std::endl;
-      std::cin>>PSDMin;
-    }
-  // grab each subevent
+  /// grab each subevent
   std::cout<<"==================================================================================="<<std::endl;
 
   for (iboard = 0; iboard<NDPPBOARDS; iboard++) {
@@ -158,13 +155,13 @@ int TUCNAnaViewer3::FindAndFitPulses(TDataContainer& dataContainer/*, int q*/){
       	{
         std::cout<<"====================================================J= "<<j<<"============================"<<std::endl;
 	for (isubev = 0;isubev<nEvents;isubev++) {	;
-	  b  = fDPP[iboard].GetPSD( /*q*/isubev, ichan );
+	  b  = fDPP[iboard].GetPSD( isubev, ichan );
 	     if (b->TimeTag == TimeStampArray[j])//added July 5, 2016 to sort the waveforms based on time tag
 	                                        //checks if time tag in the sub event is the same as the time tag
 	                                        //of the j element of the TimeStampArray (plots waves in order)
 		 {
 		
-		wf = fDPP[iboard].GetWaveform(/* q*/ isubev, ichan );//changed isubev for q July 28, 2016
+		wf = fDPP[iboard].GetWaveform( isubev, ichan );//changed isubev for q July 28, 2016
 							     
 		if ( b==NULL){
 		  std::cout<<"b==NULL"<<std::endl;
@@ -225,10 +222,10 @@ int TUCNAnaViewer3::FindAndFitPulses(TDataContainer& dataContainer/*, int q*/){
 			    			std::cout<<"Passing to UpdateHistograms"<<std::endl;
 						fV1720Waveform->UpdateHistogram(iboard, ichan, wf, b->Length,htitle);
 			  }
-			//fV1720CLQEvNum->UpdateHistogram(iboard, ichan, QLDifference, nEvents, htitle);
+		        
 			fV1720QLQL->UpdateHistogram(iboard, ichan, qlCalculated, QLBoard, nEvents);
 			fV1720QSQS->UpdateHistogram(iboard, ichan, qsCalculated, QSBoard, nEvents);
-			//	fV1720CSQEvNum->UpdateHistogram(iboard, ichan, QSDifference, nEvents, htitle);
+		        
 
 		      }//if (b->length != 0)
 		  }//if (b->length)
@@ -243,10 +240,10 @@ int TUCNAnaViewer3::FindAndFitPulses(TDataContainer& dataContainer/*, int q*/){
 } // end FindAndFitPulses
 
 
-int TUCNAnaViewer3::ProcessMidasEvent(TDataContainer& dataContainer/*, int q*/){
+int TUCNAnaViewer3::ProcessMidasEvent(TDataContainer& dataContainer, char CutChoice, float PSDMax, float PSDMin){
   
   // Find and fit V1720 pulses; this also fills the V1720 waveforms.
-  int counter = FindAndFitPulses(dataContainer/*, q*/);
+  int counter = FindAndFitPulses(dataContainer, CutChoice, PSDMax, PSDMin);
   
   return counter;
   

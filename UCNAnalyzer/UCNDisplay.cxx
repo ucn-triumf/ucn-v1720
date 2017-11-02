@@ -83,6 +83,12 @@ public:
 
 int main(int argc, char *argv[])
 {
+  std::cout<<"Size of ULong_t = "<<sizeof(ULong_t)
+	   <<" size of uint64_t = "<<sizeof(uint64_t)
+	   <<" if these differ -- maybe trouble for timestamp "
+	   <<std::endl;
+
+
   UCNDisplay::CreateSingleton<UCNDisplay>();  
   return UCNDisplay::Get().ExecuteLoop(argc, argv);
 }

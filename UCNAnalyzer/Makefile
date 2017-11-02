@@ -5,16 +5,16 @@ NDPPBOARDS=2
 PSD_MAXNCHAN=8
 
 
-CXXFLAGS = -g -Wall -Wuninitialized
+CXXFLAGS = -g -Wall -Wuninitialized -O2
 
 # optional ZLIB library
-
-CXXFLAGS += -DHAVE_ZLIB
+# added -lz -std=c++11 -lpthread A. Sikora
+CXXFLAGS += -DHAVE_ZLIB -lz -std=c++11 -pthread
 
 # ROOT libraries
 
 ifdef ROOTSYS
-ROOTGLIBS = -L$(ROOTSYS)/lib $(shell $(ROOTSYS)/bin/root-config --glibs) -lXMLParser -lThread
+ROOTGLIBS = -L$(ROOTSYS)/lib $(shell $(ROOTSYS)/bin/root-config --glibs) -lXMLParser -lThread -lRHTTP # added -lRHTTP (TL)
 CXXFLAGS += -DHAVE_ROOT $(shell $(ROOTSYS)/bin/root-config --cflags)
 endif
 
@@ -28,8 +28,8 @@ ROOTANADIR = $(HOME)/packages/rootana/
 ROOTANAINC = -I$(ROOTANADIR)/include
 ROOTANALIBS = $(ROOTANADIR)/lib/librootana.a
 
-CAENDIGLIB = $(HOME)/CAENDigitizer_2.6.0/include
-CAENCOMMLIB = $(HOME)/CAENComm-1.2/include
+CAENDIGLIB = $(HOME)/Andrew/CAENStuff/CAENDigitizer_2.7.9/include
+CAENCOMMLIB = $(HOME)/Andrew/CAENStuff/CAENComm-1.2/include
 
 OBJS:=
 OBJS += TV1720Histograms.o
@@ -39,15 +39,17 @@ OBJS += TUCNAnaViewer.o
 OBJS += TUCNAnaViewer2.o
 OBJS += TUCNAnaViewer3.o
 OBJS += TV1720WaveformDisplay.o
+OBJS += UCNRateHistogram.o
+OBJS += TTimeHelper.o
 #OBJS += TUCNAnaViewer4.o
 #TUCNAnaViewer3 added June 15, 2016
 #TUCNAnaViewer4 added June 20, 2016
-all: $(OBJS) UCNAnalyzer.exe UCNDisplay.exe UCNDisplay2.exe UCNDisplay3.exe 
+all: $(OBJS) UCNAnalyzer.exe UCNDisplay.exe UCNRateMonitor.exe UCNDisplay3.exe 
 #UCNDisplay3 added June 15, 2016
 UCNDisplay.exe: UCNDisplay.cxx $(OBJS) 
 	$(CXX) -o $@ $(CXXFLAGS) $(ROOTANAINC) $^ $(ROOTANALIBS) $(MIDASLIBS) $(ROOTGLIBS) -lm -lpthread $(RPATH)  -lrt -lutil
 
-UCNDisplay2.exe: UCNDisplay2.cxx $(OBJS) 
+UCNRateMonitor.exe: UCNRateMonitor.cxx $(OBJS) 
 	$(CXX) -o $@ $(CXXFLAGS) $(ROOTANAINC) $^ $(ROOTANALIBS) $(MIDASLIBS) $(ROOTGLIBS) -lm -lpthread $(RPATH)  -lrt -lutil
 
 UCNDisplay3.exe: UCNDisplay3.cxx $(OBJS) 

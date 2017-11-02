@@ -32,6 +32,11 @@ int TUCNAnaViewer::FindAndFitPulses(TDataContainer& dataContainer){
   // Loop over all the data, fill the histograms and and find histograms.
   TMidasEvent sample = dataContainer.GetMidasEvent();
 
+
+  std::string banklist(sample.GetBankList());
+  //std::cout << banklist << std::endl;
+  if(banklist.find("W20") == std::string::npos) return 1;
+
   // output bank block information
   if(verbose) {
     printf("event id: %d\n",sample.GetEventId());
@@ -84,22 +89,13 @@ int TUCNAnaViewer::FindAndFitPulses(TDataContainer& dataContainer){
     for (ichan = 0; ichan < PSD_MAXNCHAN;ichan++) {
 
       // bug fix below on Jun.17,2016 ... should loop over number
-      // of waveforms on each channel, not "total number of events" for each channel
-      //nEvents = fDPP[iboard].GetNEvents();
+      // of waveforms on each channel, not "total number of events" for each channel      
       nEvents = fDPP[iboard].GetNWaves(ichan);
-      //std::cout<<" board="<<iboard<<" ch="<<ichan<<" waveforms="<<nEvents<<" / All events="<< fDPP[iboard].GetNEvents()<<std::endl;
-
 
       for (isubev = 0;isubev<nEvents;isubev++) {	
 
 	b  = fDPP[iboard].GetPSD( isubev, ichan );
-	wf = fDPP[iboard].GetWaveform( isubev, ichan );/////
-
-	//if (verbose) std::cout<<"board="<<iboard
-	//		      <<" ch="<<ichan
-	//		      <<" ev="<<isubev<<" / "<<nEvents
-	//		      <<" b="<<b
-	//		      <<std::endl;
+	wf = fDPP[iboard].GetWaveform( isubev, ichan );
 
 	if ( b==NULL) 
 	  continue;

@@ -20,14 +20,12 @@ class TUCNAnaViewer3 {
   ~TUCNAnaViewer3();
   
   /// Processes the midas event, fills histograms, etc.
-  int ProcessMidasEvent(TDataContainer& dataContainer/*, int q*/);
+  int ProcessMidasEvent(TDataContainer& dataContainer,char CutChoice, float PSDMax, float PSDMin);
   
-  int FindAndFitPulses(TDataContainer& dataContainer/*, int q*/);
+  int FindAndFitPulses(TDataContainer& dataContainer, char CutChoice, float PSDMax, float PSDMin);
   
   /// Blah, make histograms public; 
   TV1720Waveform* fV1720Waveform;
-  //TV1720CLQEvNum* fV1720CLQEvNum;
-  //TV1720CSQEvNum* fV1720CSQEvNum;
   TV1720QLQL * fV1720QLQL;
   TV1720QSQS * fV1720QSQS;
   

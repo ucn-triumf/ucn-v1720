@@ -35,6 +35,10 @@ int board, ch, ev, preev, eventSelect;
 int firstPlot = 0;
 int m=0;
 
+char CutChoice; //< if = y then plot waves in PSDMax-PSDMin range
+float PSDMax;   //< Max PSD value of cut
+float PSDMin;   //< Min PSD value of cut
+
 fstream eventNumber;
 
 class UCNDisplay3: public TRootanaDisplay {
@@ -54,19 +58,14 @@ public:
     
     TFancyHistogramCanvas* v1720_waveform = 
       new TFancyHistogramCanvas(anaViewer->fV1720Waveform, "V1720 Waveform",9,false);
-      AddSingleCanvas(v1720_waveform);
-
-    //  TFancyHistogramCanvas * v1720_CLQEvNum = new TFancyHistogramCanvas(anaViewer->fV1720CLQEvNum, "V1720 CLQvsEvNum", 9, false);
-    // AddSingleCanvas(v1720_CLQEvNum);
-
+    AddSingleCanvas(v1720_waveform);
+    
     TFancyHistogramCanvas * v1720_QLQL = new TFancyHistogramCanvas(anaViewer->fV1720QLQL, "V1720 QLvsQL", 9, false);
     AddSingleCanvas(v1720_QLQL);
 
- TFancyHistogramCanvas * v1720_QSQS = new TFancyHistogramCanvas(anaViewer->fV1720QSQS, "V1720 QSvsQS", 9, false);
-   AddSingleCanvas(v1720_QSQS);
-
-    // TFancyHistogramCanvas * v1720_CSQEvNum = new TFancyHistogramCanvas(anaViewer->fV1720CSQEvNum, "V1720 CSQvsEvNum", 9, false);
-    // AddSingleCanvas(v1720_CSQEvNum);
+    TFancyHistogramCanvas * v1720_QSQS = new TFancyHistogramCanvas(anaViewer->fV1720QSQS, "V1720 QSvsQS", 9, false);
+    AddSingleCanvas(v1720_QSQS);
+    
   };
   
   ~UCNDisplay3() {};
@@ -74,31 +73,40 @@ public:
   
   void UpdateHistograms(TDataContainer& dataContainer)
   {
-    std::cout<<"entering update histograms"<<std::endl;
+
     TMidasEvent sample = dataContainer.GetMidasEvent();
     TMidas_BANK32 * bank = NULL;  
     char * pdata = sample.GetData();
-    DPP_Bank_Out_t *b;   
+    DPP_Bank_Out_t *b; 
 
-    std::cout<<"Before Process midas Event"<<std::endl;
-    anaViewer->ProcessMidasEvent(dataContainer);
-    std::cout<<"after process midas event"<<std::endl;
+    /// If CutChoice hasnt been given a value then the user can choose to perfrom
+    /// a PSD cut on the data bein viewed or not. If yes then user enters the max
+    /// and min values of this PSD cut.
+    /// A. Sikora June 2017
+    if (!CutChoice)
+      {
+	std::cout<<"Would you like to enter a PSD cut? (y = yes, n = no)"<<std::endl;
+	std::cin>>CutChoice;
+	if (CutChoice == 'y')
+	  {
+	    std::cout<<"Enter max PSD value "<<std::endl;
+	    std::cin>>PSDMax;
+	    std::cout<<"Enter min PSD value "<<std::endl;
+	    std::cin>>PSDMin;
+	  }
+      }
+
+    anaViewer->ProcessMidasEvent(dataContainer, CutChoice, PSDMax, PSDMin);
   }
   
   void PlotCanvas(TDataContainer& dataContainer)
   {
-    std::cout<<"Start of PlotCanvas"<<std::endl;
     if(GetDisplayWindow()->GetCurrentTabName().compare("V1720 Waveform")==0)
-      {
-	
-	TCanvas* cl= GetDisplayWindow()->GetCanvas("V1720 Waveform");
-	
-	cl->Clear();
-	
-	anaViewer->fV1720Waveform->GetHistogram(1)->Draw("hist");
-	
-	cl->Modified();
-	
+      {	
+	TCanvas* cl= GetDisplayWindow()->GetCanvas("V1720 Waveform");	
+	cl->Clear();	
+	anaViewer->fV1720Waveform->GetHistogram(1)->Draw("hist");	
+	cl->Modified();	
 	cl->Update();
       }
   }
@@ -110,9 +118,7 @@ bool fileExists(const std::string& filename)
         return true;
     }
     return false;
-}
-
-  
+}  
 };
 
 int main(int argc, char *argv[])

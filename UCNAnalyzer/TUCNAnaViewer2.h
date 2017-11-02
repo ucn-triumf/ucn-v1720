@@ -1,3 +1,9 @@
+#ifndef _TUCNAnaViewer2_h_
+#define _TUCNAnaViewer2_h_
+
+
+#include "UCNRateHistogram.h"
+#include "TTimeHelper.h"
 
 #include "TH1D.h"
 #include "TV1720Histograms.h"
@@ -5,10 +11,18 @@
 #include "PulseShapeStruct.h"
 #include "TCanvas.h"
 #include "TTree.h"
+#include "TFile.h"
+#include <time.h>
+#include <thread>
+#include <iostream>
+#include <fstream>
 
-/// This is a class for managing the analysis of UCN data.
-/// It creates and fills a TTree of DPP values and a variable
-/// length array of the ADC values for individual pulses.
+
+/// TUCNAnaViewer2
+/// For looking at rate of events in last 3600 x 2 seconds
+/// Every 3600 seconds save previous plot (except first time), and
+/// update prev plot to be current one, and make new current one.
+/// Saving of plots is into root file...
 class TUCNAnaViewer2 {
   
  public:
@@ -17,34 +31,57 @@ class TUCNAnaViewer2 {
   ~TUCNAnaViewer2();
   
   /// Processes the midas event, fills histograms, etc.
-  int ProcessMidasEvent(TDataContainer& dataContainer);
-  int FindAndFitPulses(TDataContainer& dataContainer);
+  int ProcessMidasEvent(TDataContainer& dataContainer, char CutChoice, float PSDMax, float PSDMin);
 
-  TH1D *fV1720TimeHistogram;
+  /// Get "current" histogram
+  UCNRateHistogram* GetCurrHisto() const { return hCurr; }//TH1D* to UCNRateHistogram*
+  
+  /// Get "previous" histogram
+  UCNRateHistogram* GetPrevHisto() const { return hPrev; }//TH1D to UCNRateHistogram*
+
+  /// Method to get "BeginRun" transition
+  void BeginRun( int run );
+
+  /// Method to get "EndRun" transition
+  void EndRun( int run );
+
+  /// Used to split up the amount of sub evetns being processed at one time using threads
+  void SubEvLoop(UCNRateHistogram * hPrev, UCNRateHistogram * hCur, TTimeHelper tthelp[],
+		 int ich, int ichan, int iboard, unsigned long *banktime, TMidasEvent sample,
+		 int *loopstart, int* loopend );
+
+  std::thread first;
+  std::thread second;
+  std::thread third;
+  std::thread fourth;
+  int Thr1loopstart, Thr2loopstart, Thr3loopstart, Thr4loopstart;
+  int prevBin=0;
 
  private:
-   
-  // runtime variables
-  int index;
-  int numBins;
-  DPP_Bank_Out_t *b;
-  //uint16_t *wf;
-  int nEvents,channel,nLoop;
-  int iboard, ichan, isubev;
-  ULong_t subTotEvent;
-  ULong_t subTotEventH;
-  ULong64_t time, nextTime,sec;
-  ULong64_t prevTime[PSD_MAXNCHAN*NDPPBOARDS];
-  ULong64_t currTime[PSD_MAXNCHAN*NDPPBOARDS];
-  ULong64_t addedTime[PSD_MAXNCHAN*NDPPBOARDS];
-  //ULong64_t dtTime[PSD_MAXNCHAN*NDPPBOARDS];
-  //ULong64_t tminThisEvent[PSD_MAXNCHAN*NDPPBOARDS];
-  //ULong64_t tmaxThisEvent[PSD_MAXNCHAN*NDPPBOARDS];
-  uint32_t numEvents,numSamples;
-  int      verbose;
-  int refChan;
-  bool loop;
-  bool first[PSD_MAXNCHAN*NDPPBOARDS];
-  DPPBankHandler fDPP[NDPPBOARDS];
+  
+  TFile         * fOut;  //< Root output file
+  UCNRateHistogram * hCurr; //< Most recent rate histogram
+  UCNRateHistogram * hPrev; //< Previous rate histogram
+  
+  DPPBankHandler fDPP[NDPPBOARDS]; //< Data container for data read in from digitizer
+
+  TTimeHelper tthelp[NDPPBOARDS*PSD_MAXNCHAN]; //< Time helper per channel
+  
+  int NCPU = 4; //< number of CPUs in DAQ cumputer;
+  char threading = 0; //<  ==1 for thread mode ==0 for non thread mode
+  float PSD;
+
+  ofstream AverageRate;
+  int totalSeconds;
+  int totalEvents;
+
+  ofstream EventCounter;
+  long int totalPulses;
+  long int valveOpenEvents;
+  int valveOpen=0; //= 0 closed, 1 = open
+  int valveChan = 14;
+
 
 };
+
+#endif
