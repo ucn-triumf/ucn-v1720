@@ -14,7 +14,8 @@
 
 // bank structure of individual events from MIDAS
 typedef struct {
-  uint32_t TimeTag;
+  //uint32_t TimeTag; // Update to 64 bit timestamp -- June 2017
+  uint64_t TimeTag;
   int16_t  Channel;
   int16_t ChargeShort;
   int16_t ChargeLong;
