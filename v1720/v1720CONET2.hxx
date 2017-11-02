@@ -23,17 +23,20 @@ This file contains the class definition for the v1720 module driver.
 #include <sys/time.h>
 #include <vector>
 
+
+
 extern "C" {
 #include "CAENComm.h"
 #include "ov1720drv.h"
 #include <CAENDigitizer.h>
 }
+//#include "TUCNAnaManager3.h"
 
 #include "midas.h"
 
 // structure of event to be saved to file
 typedef struct {
-  uint32_t TimeTag;
+  uint64_t TimeTag;
   int16_t Channel;
   int16_t ChargeShort;
   int16_t ChargeLong;
@@ -119,7 +122,7 @@ private:
   void FillQtBank(char * aDest, uint32_t * aZLEData);
 
 public:
-  int verbose;  //!< Make the driver verbose
+  int verbose = 1;  //!< Make the driver verbose
                 //!< 0: off
                 //!< 1: normal
                 //!< 2: very verbose

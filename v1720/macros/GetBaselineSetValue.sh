@@ -1,11 +1,12 @@
 #!/bin/bash
 
-if test -e "/home/midas/online/NeutronDaq/UCNAnalyzer/BaselineSetValue"; then rm /home/midas/online/NeutronDaq/UCNAnalyzer/BaselineSetValue;fi
+if test -e "./BaselineSetValue"; then rm ./BaselineSetValue;fi
 
-fname="/home/midas/online/NeutronDaq/UCNAnalyzer/BaselineSetValue"
+fname="./BaselineSetValue"
 
 
 echo $fname
-#echo "BaselineSetValue" > $fname
-
-odbedit -c "ls \"Equipment/FEV1720I/Settings/Module0/Baseline Threshold\" ">>$fname
+echo "Module 0 BaselineSetValue" > $fname
+odbedit -c "ls \"Equipment/Li6_Detector/Settings/Module0/Baseline Threshold\" ">>$fname
+echo "Module 1 BaselineSetValue" >> $fname
+odbedit -c "ls \"Equipment/Li6_Detector/Settings/Module1/Baseline Threshold\" ">>$fname

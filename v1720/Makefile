@@ -87,13 +87,13 @@ endif
 #-------------------------------------------------------------------
 # The following lines define directories. Adjust if necessary
 #
-CONET2_DIR   = $(HOME)
-CAENCOMM_DIR = $(CONET2_DIR)/CAENComm
-CAENCOMM_LIB = $(CAENCOMM_DIR)/lib/x86_64
-CAENDGTZ_DIR = $(CONET2_DIR)/CAENDigitizer_2.3.2
-CAENDGTZ_LIB = $(CAENCOMM_DIR)/lib/x86_64
-CAENVME_DIR  = $(CONET2_DIR)/CAENVMELib-2.30.2
-CAENVME_LIB  = $(CAENVME_DIR)/lib/x86_64
+CONET2_DIR   = $(HOME)/Andrew/CAENStuff
+CAENCOMM_DIR = $(CONET2_DIR)/CAENComm-1.2
+CAENCOMM_LIB = $(CAENCOMM_DIR)/lib/x86
+CAENDGTZ_DIR = $(CONET2_DIR)/CAENDigitizer_2.7.9
+CAENDGTZ_LIB = $(CAENDGTZ_DIR)/lib/x86_64
+CAENVME_DIR  = $(CONET2_DIR)/CAENVMELib-2.50
+CAENVME_LIB  = $(CAENVME_DIR)/lib/x86
 MIDAS_INC    = $(MIDASSYS)/include
 MIDAS_LIB    = $(MIDASSYS)/$(OS_DIR)/lib
 MIDAS_SRC    = $(MIDASSYS)/src

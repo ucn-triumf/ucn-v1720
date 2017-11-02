@@ -8,6 +8,7 @@ This file contains the class implementation for the v1720 module driver.
  *****************************************************************************/
 
 #include "v1720CONET2.hxx"
+#include <bitset>
 
 #define UNUSED(x) ((void)(x)) //!< Suppress compiler warnings
 
@@ -560,7 +561,6 @@ bool v1720CONET2::FillEventBank(char * pevent)
     exit(0);
     //return false;    
   }
-  
   if ( BufferSize == 0 )
     return true;  
   
@@ -570,14 +570,13 @@ bool v1720CONET2::FillEventBank(char * pevent)
     //printf("<v1720CONET2::FillEventBank> Data Error: %d\n", ret);
     return false;
   }
-  
+
   // find the total number of events for this read
   for(ch=0; ch<MaxNChannels; ch++) {
     if (!(DPPConfig.Params.ChannelMask & (1<<ch)))
       continue;
     NTotal+=NumEvents[ch];
   }
- 
 
   // >>> create data bank
   sprintf(bankName, "W2%02d", this->_moduleID);
@@ -594,15 +593,80 @@ bool v1720CONET2::FillEventBank(char * pevent)
       /* Channel */
       out.Channel = ch;
       /* Time Tag */
-      out.TimeTag = Events[ch][ev].TimeTag+Events[ch][ev].Extras;
+      // build time from TimeTag and Extras
+      uint64_t ttag = Events[ch][ev].TimeTag;
+      uint64_t textra = Events[ch][ev].Extras;
+      textra = (textra << 32); 
+      if(verbose){
+	std::cout<<"Timetag and extras: \n\t"
+		 << std::bitset<64>( ttag ) << "+ \n\t"
+		 << std::bitset<64>( textra ) << "= \n\t"
+		 << std::bitset<64>( ttag+textra ) << "+ \n";
+      }
+      out.TimeTag = ttag+textra;
+      if (verbose)
+	std::cout<<"ttag="<< ttag<<" textra="<<textra<<" sum="<<out.TimeTag<<std::endl;
       /* Energy */
       out.ChargeShort= Events[ch][ev].ChargeShort;
       out.ChargeLong = Events[ch][ev].ChargeLong;
       out.Baseline =  Events[ch][ev].Baseline;
 
+      if(verbose){
+	std::cout<<"Format: "  <<std::bitset<32>( Events[ch][ev].Format )
+		 <<" Format2: "<<std::bitset<32>( Events[ch][ev].Format2 )  <<std::endl;
+      }
+      // check if flags are enabled:
+      // bit 29 ET (Time tag enable)
+      unsigned bit29mask = 0x20000000;
+      // bit 28 EE (Extras enable)
+      unsigned bit28mask = 0x10000000;
+      // bit 22 EET (EET=1, then put extended timestamp in extras)
+      unsigned bit22mask = 0x00400000;
+
+      /*if(verbose){
+	std::cout<<" ET enabled = "<<  std::endl
+		 << "\t" << std::bitset<32>( Events[ch][ev].Format )  << "&" << std::endl
+		 << "\t" << std::bitset<32>( bit29mask ) <<" = "<< std::endl
+		 << "\t" << std::bitset<32>(Events[ch][ev].Format & bit29mask)  << std::endl; 
+	
+	std::cout<<" EE enabled = "<<  std::endl
+		 << "\t" << std::bitset<32>( Events[ch][ev].Format )  << "&" << std::endl
+		 << "\t" << std::bitset<32>( bit28mask ) <<" = "<< std::endl
+		 << "\t" << std::bitset<32>(Events[ch][ev].Format & bit28mask)  << std::endl; 
+	
+	std::cout<<" EET enabled = "<<  std::endl
+		 << "\t" << std::bitset<32>( Events[ch][ev].Format )  << "&" << std::endl
+		 << "\t" << std::bitset<32>( bit22mask ) <<" = "<< std::endl
+		 << "\t" << std::bitset<32>(Events[ch][ev].Format & bit22mask)  << std::endl;
+		 }*/
+      // Register reads to make sure that they are still set to what will allow for an extended
+      // time stamp.
+      uint32_t reg;
+      if (verbose){
+	ret = CAEN_DGTZ_ReadRegister(_device_handle, 0x8000, &reg);
+	if ( ret != CAEN_DGTZ_Success ) {
+	  std::cout<<"CAEN_DGTZ_ReadRegister 0x8000 failed with "<<ret<<std::endl;
+	} else {
+	  //std::cout<<"0x8000 read    to be "<<std::bitset<32>(reg)<<std::endl;
+	}
+	
+	for (int ich=0; ich<8; ++ich){
+	  //std::cout << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" "<<std::endl;
+	  unsigned regn;
+	  unsigned addrn = 0x1080 + ich*0x100;
+	  ret = CAEN_DGTZ_ReadRegister(_device_handle, addrn, &regn);
+	  if ( ret != CAEN_DGTZ_Success ) {
+	    std::cout<<"CAEN_DGTZ_ReadRegister "<<std::hex<<addrn<< " failed with "<<ret<<std::endl;
+	  } else {
+	    //std::cout<<std::hex<<addrn<<" read  to be "<<std::bitset<32>(regn)<<" == "<<std::hex<<regn<<std::dec<<std::endl;
+	  }
+	  
+	}
+      }
+      
       if (this->_moduleID == 0) sum0[ch]=sum0[ch]+out.Baseline;///////added May 26, 2016
       if (this->_moduleID == 1) sum1[ch]=sum1[ch]+out.Baseline;
-	
+      
       //std::cout<<"Channel: "<<ch<<"Event: "<<ev<<"Baseline: "<<Events[ch][ev].Baseline<<endl;
       out.Pur = Events[ch][ev].Pur;
 	
@@ -627,12 +691,15 @@ bool v1720CONET2::FillEventBank(char * pevent)
 	memcpy( pdata, (void*)&out, sizeof( out ) ); 
 	pdata += sizeof(out)/sizeof(DWORD);
 
+	std::cout << "Size of out : " << sizeof(out) << " " << sizeof(out)/sizeof(DWORD) << std::endl;
    
 	// save waveform to the pointer before saving to the bank
 	// copy from the first element of the waveform in memory 
 	// to the full length of the array
 	memcpy( pdata, (void*)&Waveform->Trace1[0], out.Length * sizeof( uint16_t ) ); 
 	pdata += out.Length*sizeof( uint16_t )/sizeof(DWORD);
+	std::cout << "Size of length : " <<  out.Length << " " 
+		  << sizeof( uint16_t ) << " " << sizeof(DWORD) << std::endl;
 
       }
       // clear waveform for next event
@@ -645,123 +712,9 @@ bool v1720CONET2::FillEventBank(char * pevent)
       NumEvents1[ch]=(int)(NumEvents[ch]);
     }
     
-  //DCOFFSETCALC(sum1, sum0, this->_moduleID, NumEvents1);
-  /* if (this->_moduleID==0)////////////////////////////added May 27, 2016
-    {
-      int returnval;
-      if (verb ==1)
-	{
-	  std::cout<<"ModuleID: "<<this->_moduleID<<endl;
-	  std::cout<<"EventCount: "<<EventCount<<endl;
-	}
-   for (ch=0;ch<MaxNChannels; ch++)////////added May 26, 2016
-    {
-      // std::cout<<"NumEvents: "<<NumEvents[ch]<<endl;
-      if (NumEvents[ch]!=0) HadEvent_m0[ch]++;
-      if (verb ==1) if (NumEvents[ch] != 0) std::cout<<"Base: "<<sum0[ch]/NumEvents[ch]<<endl;
-      if(NumEvents[ch]!=0 && HadEvent_m0[ch]==1)
-	{
-	  Base[ch]=(int)(sum0[ch]/NumEvents[ch]);//gets the average basline of the channel
-	                                        //and sets that as Base[ch]
-	  if (verb ==1) std::cout<<"Channel: "<<ch<<" Base: "<<Base[ch]<<endl;
-	}
-    else if (NumEvents[ch]!=0 && abs(BaselineSetValue - ((int)(sum0[ch]/NumEvents[ch]))) >= 20)
-	{
-	  std::cout<<"Channel "<<ch<<" of board "<<this->_moduleID<<" was weird"<<endl;
-	  Base[ch]=(int)((sum0[ch]/NumEvents[ch]));//gets the average basline of the channel
-	                                         //and sets that as Base[ch]
-	  if (verb ==1) std::cout<<"Channel: "<<ch<<" Base: "<<Base[ch]<<endl;
-	   config.DCoffset[ch] =(int)(13.37*(Base[ch]-BaselineSetValue)+32767.5);
-	   returnval |= CAEN_DGTZ_SetChannelDCOffset(_device_handle, ch, config.DCoffset[ch]);
-	    
-	}
-      if (ch==0 && HadEvent_m0[0]==1)//sets the target baseline for all offsets to adjust to
-	{
-	      BaselineSetValue = Base[ch];
-	      if (verb==1)
-		{
-		  std::cout<<"BaselineSetValue: "<<BaselineSetValue<<endl;
-		  std::cout<<"Module ID: "<<this->_moduleID<<endl;
-		}
-	}
-    }
-    int z=0;
-    for (z=0; z<MaxNChannels; z++)//////////added May 26, 2016
-    {
-      if (Base[z]!=0 && HadEvent_m0[z]==2)
-	{ 
-	  config.DCoffset[z] =(int)(13.37*(Base[z]-BaselineSetValue)+32767.5);//derived equation for calculating DC Offset
-	  returnval |= CAEN_DGTZ_SetChannelDCOffset(_device_handle, z, config.DCoffset[z]);//this is where the DC Offset is actually changed
-	}
-      if (verb ==1) std::cout<<"Channel: "<<z<<" DC Offset: "<<config.DCoffset[z]<<endl;
-    }
-    }
 
-  if (this->_moduleID==1)//added May 27, 2016 //have separate if statements for each module allows the offsets for one module to change
-                                              //while on the other module they stay the same
-    {
- int returnval;
- if (verb ==1)
-   {
-     std::cout<<"ModuleID: "<<this->_moduleID<<endl;
-     std::cout<<"EventCount: "<<EventCount<<endl;
-   }
-   for (ch=0;ch<MaxNChannels; ch++)////////added May 26, 2016
-    {
-      // std::cout<<"NumEvents: "<<NumEvents[ch]<<endl;
-      if (NumEvents[ch]!=0) HadEvent_m1[ch]++;
-      if (verb ==1)
-	{
-	  if (NumEvents[ch]!=0) std::cout<<"BaselineSetValue: "<<BaselineSetValue<<endl;
-	  if (NumEvents[ch] != 0) std::cout<<"Base: "<<sum1[ch]/NumEvents[ch]<<endl;
-	}
-      if((NumEvents[ch]!=0 && HadEvent_m1[ch]==1))
-	{
-	  Base[ch]=(int)((sum1[ch]/NumEvents[ch]));//gets the average basline of the channel
-	                                         //and sets that as Base[ch]
-	  if (verb ==1)  std::cout<<"Channel: "<<ch<<" Base: "<<Base[ch]<<endl;
-	}
-      else if (NumEvents[ch]!=0 && abs(BaselineSetValue - ((int)(sum1[ch]/NumEvents[ch]))) >= 20)
-	{
-	  Base[ch]=(int)((sum1[ch]/NumEvents[ch]));//gets the average basline of the channel
-	                                         //and sets that as Base[ch]
-	  if (verb ==1) std::cout<<"Channel: "<<ch<<" Base: "<<Base[ch]<<endl;
-	   config.DCoffset[ch] =(int)(13.37*(Base[ch]-BaselineSetValue)+32767.5);
-	   returnval |= CAEN_DGTZ_SetChannelDCOffset(_device_handle, ch, config.DCoffset[ch]);
-	    
-	}
-    }
-
-    int z=0;
-    for (z=0; z<MaxNChannels; z++)//////////added May 26, 2016
-    {
-      if ((Base[z]!=0 && HadEvent_m1[z]==1))
-	{ 
-	  config.DCoffset[z] =(int)(13.37*(Base[z]-BaselineSetValue)+32767.5);
-	  returnval |= CAEN_DGTZ_SetChannelDCOffset(_device_handle, z, config.DCoffset[z]);
-	}
-      if (verb ==1) std::cout<<"Channel: "<<z<<" DC Offset: "<<config.DCoffset[z]<<endl;
-    }
-    }*/
   bk_close(pevent,pdata);
-  /*  EventCount++;/////////added May 26, 2016
-  if(verb ==1)
-    {
-      if (this->_moduleID==0)
-	{
-	  for (ch=0; ch<8; ch++)
-	    {
-	      std::cout<<"had event "<<ch<<": "<<HadEvent_m0[ch]<<endl;
-	    }
-	}
-      if (this->_moduleID==1)
-	{
-	  for (ch=0; ch<8; ch++)
-	    {
-	      std::cout<<"had event "<<ch<<": "<<HadEvent_m1[ch]<<endl;
-	    }
-	}
-	}*/
+
   return true;
 }
 
@@ -796,7 +749,7 @@ bool v1720CONET2::SendTrigger()
  * Ex: For a frontend with index number 2 and board number 0, this
  * record will be created/merged:
  *
- * /Equipment/FEV1720I2/Settings/Module0
+ * /Equipment/Li6_Detector/Settings/Module0
  *
  * \param   [in]  h        main ODB handle
  * \param   [in]  cb_func  Callback function to call when record is updated
@@ -809,9 +762,9 @@ int v1720CONET2::SetBoardRecord(HNDLE h, void(*cb_func)(INT,INT,void*))
   // if _feindex == -1, no index supplied; assume 1 frontend for all boards
   // else set up the number of modules with the _feindex supplies
   if(_feindex == -1)
-    sprintf(set_str, "/Equipment/FEV1720I/Settings/Module%d", _moduleID);
+    sprintf(set_str, "/Equipment/Li6_Detector/Settings/Module%d", _moduleID);
   else
-    sprintf(set_str, "/Equipment/FEV1720I%02d/Settings/Module%d", _feindex, _moduleID);
+    sprintf(set_str, "/Equipment/Li6_Detector%02d/Settings/Module%d", _feindex, _moduleID);
 
   if (verbose) cout << GetName() << "::SetBoardRecord(" << h << "," << set_str << ",...)" << endl;
   int status,size;
@@ -909,11 +862,60 @@ int v1720CONET2::InitializeForAcq()
 {
   CAEN_DGTZ_ErrorCode ret;
   
-  uint32_t reg, reg2;
+  uint32_t reg, reg2, reg3, reg4;
+
   ret = CAEN_DGTZ_ReadRegister(_device_handle, 0x8000, &reg);
+  if(verbose){
+    if ( ret != CAEN_DGTZ_Success ) {
+      std::cout<<"CAEN_DGTZ_ReadRegister 0x8000 failed with "<<ret<<std::endl;
+    } else {
+      //std::cout<<"0x8000 read    to be "<<std::bitset<32>(reg)<<std::endl;
+    }
+  }
   ret = CAEN_DGTZ_WriteRegister(_device_handle, 0x8000, (reg | (1 << 17)));
-  ret = CAEN_DGTZ_ReadRegister(_device_handle, 0x8080, &reg2);
-  ret = CAEN_DGTZ_WriteRegister(_device_handle, 0x8080, (reg2 | (1<<7)));
+  if(verbose){
+    if ( ret != CAEN_DGTZ_Success ) {
+      std::cout<<"CAEN_DGTZ_WriteRegister 0x8000 failed with "<<ret<<std::endl;
+    } else {
+      //std::cout<<"0x8000 written to be "<<std::bitset<32>( reg|(1<<17) )<<std::endl;
+    }
+  }
+  // check enable extra info and extra time tag:
+  ret = CAEN_DGTZ_ReadRegister(_device_handle, 0x8000, &reg3);
+  if (verbose){
+    if ( ret != CAEN_DGTZ_Success ) {
+      std::cout<<"CAEN_DGTZ_ReadRegister 0x8000 failed with "<<ret<<std::endl;
+    } else {
+      //std::cout<<"0x8000 read    to be "<<std::bitset<32>(reg3)<<std::endl;
+    }
+  }
+ 
+
+  /*for (int ich=0; ich<8; ++ich){
+    //std::cout << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" "<<std::endl;
+    unsigned regn;
+    unsigned addrn = 0x1080 + ich*0x100;
+    ret = CAEN_DGTZ_ReadRegister(_device_handle, addrn, &regn);
+    if ( ret != CAEN_DGTZ_Success ) {
+      std::cout<<"CAEN_DGTZ_ReadRegister "<<std::hex<<addrn<< " failed with "<<ret<<std::endl;
+    } else {
+      //std::cout<<std::hex<<addrn<<" read  to be "<<std::bitset<32>(regn)<<" == "<<std::hex<<regn<<std::dec<<std::endl;
+    }
+
+    ret = CAEN_DGTZ_WriteRegister(_device_handle, addrn, ( regn | (1<<7) ) );
+    if ( ret != CAEN_DGTZ_Success ) {
+      std::cout<<"CAEN_DGTZ_WriteRegister "<<std::hex<<addrn<<" failed with "<<ret<<std::endl;
+    } else {
+      //std::cout<<std::hex<<addrn<<" write to be "<< std::bitset<32>( regn | (1<<7) ) <<" == "<<std::hex<<(regn|(1<<7))<<std::dec<<std::endl;
+    }
+    ret = CAEN_DGTZ_ReadRegister(_device_handle, addrn, &regn);
+    if ( ret != CAEN_DGTZ_Success ) {
+      std::cout<<"CAEN_DGTZ_ReadRegister "<<std::hex<<addrn<< " failed with "<<ret<<std::endl;
+    } else {
+      //std::cout<<std::hex<<addrn<<" read  to be "<<std::bitset<32>(regn)<<" == "<<std::hex<<regn<<std::dec<<std::endl;
+    }
+
+    }*/
 
 
   if (verbose) cout << GetName() << "::InitializeForAcq()" << endl;
@@ -958,7 +960,7 @@ int v1720CONET2::InitializeForAcq()
                                                            // Oscilloscope mode)
   DPPConfig.Params.SaveWaveforms = config.savewaveforms;
   DPPConfig.Params.ChannelMask = config.channel_mask;      // Channel enable mask
-  DPPConfig.Params.EventAggr = 255;//0;// 255;// 512;//1024;//0;//1024;                          // number of events in one aggregate (0=automatic)
+  DPPConfig.Params.EventAggr = 1;// 255;// 512;//1024;//0;//1024;                          // number of events in one aggregate (0=automatic)
   DPPConfig.Params.PulsePolarity = CAEN_DGTZ_PulsePolarityNegative; // Pulse Polarity (this parameter can be 
                                                                     // individual)
   for(int ch=0; ch<8; ch++) {
@@ -1048,11 +1050,12 @@ int v1720CONET2::InitializeForAcq()
   // Set how many events to accumulate in the board memory before being available for readout
   // DPPConfig.Params.EventAggr==0 - let the board decide
   if ( config.sw_trig_mode != 0 || 1 ){
+    //ret = CAEN_DGTZ_SetDPPEventAggregation(_device_handle, DPPConfig.Params.EventAggr, 0);
+    //re = CAEN_DGTZ_SetDPPEventAggregation(_device_handle, DPPConfig.Params.EventAggr, 512);
     ret = CAEN_DGTZ_SetDPPEventAggregation(_device_handle, DPPConfig.Params.EventAggr, 0);
-    //   re = CAEN_DGTZ_SetDPPEventAggregation(_device_handle, DPPConfig.Params.EventAggr, 512);
     if (ret != CAEN_DGTZ_Success) {
-      printf("<v1720CONET2::InitializeForAcq> Error in CAEN_DGTZ_SetDPPEventAggregation %d\n",ret);
-      return (int)ret;
+      printf("<v1720CONET2::InitializeForAcq> ~~~ ! Error in CAEN_DGTZ_SetDPPEventAggregation %d\n",ret);
+      return (int)ret; 
     }
   }
 
@@ -1068,6 +1071,7 @@ int v1720CONET2::InitializeForAcq()
 
   // Set the enabled channels
   ret = CAEN_DGTZ_SetChannelEnableMask(_device_handle, DPPConfig.Params.ChannelMask);  
+  std::cout << " V1720 enable mask : " << DPPConfig.Params.ChannelMask << " " << _link << std::endl;
   if (ret != CAEN_DGTZ_Success) {
     printf("<v1720CONET2::InitializeForAcq> Error in CAEN_DGTZ_SetChannelEnableMask %d\n",ret);
     return (int)ret;
@@ -1173,7 +1177,71 @@ int v1720CONET2::InitializeForAcq()
 
 
 
+  // check enable extra info and extra time tag:
+  // read register 0x8000 to see if its the same as earlier in the code
+  // bit 17 must be 1 for extended time stamp
+  ret = CAEN_DGTZ_ReadRegister(_device_handle, 0x8000, &reg3);
+  if (verbose){
+    if ( ret != CAEN_DGTZ_Success ) {
+      std::cout<<"CAEN_DGTZ_ReadRegister 0x8000 failed with "<<ret<<std::endl;
+    } else {
+      std::cout<<"0x8000 read to be "<<std::bitset<32>(reg3)<<std::endl;
+    }
+  }
+  // read and write all 0x1n80 registers
+  // set bit 7 to 1 to allow for extended time stamp
+  for (int ich=0; ich<8; ++ich){
+    if(verbose){ 
+      //std::cout << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" "<<std::endl;
+    }
+    unsigned addrn = 0x1080 + ich*0x100;
+    unsigned regn;
+    ret = CAEN_DGTZ_ReadRegister(_device_handle, addrn, &regn);
+    if (verbose){
+      if ( ret != CAEN_DGTZ_Success ) {
+	std::cout<<"CAEN_DGTZ_ReadRegister "<<std::hex<<addrn<< " failed with "<<ret<<std::endl;
+      } else {
+	//std::cout<<std::hex<<addrn<<" read  to be "<<std::bitset<32>(regn)<<" == "<<std::hex<<regn<<std::dec<<std::endl;
+      }
+    }
+    
+    ret = CAEN_DGTZ_WriteRegister(_device_handle, addrn, ( regn | (1<<7) ) );
+    if(verbose){
+      if ( ret != CAEN_DGTZ_Success ) {
+	std::cout<<"CAEN_DGTZ_WriteRegister "<<std::hex<<addrn<<" failed with "<<ret<<std::endl;
+      } else {
+	//std::cout<<std::hex<<addrn<<" write to be "<< std::bitset<32>( regn | (1<<7) ) <<" == "<<std::hex<<(regn|(1<<7))<<std::dec<<std::endl;
+      }
+    }
+    ret = CAEN_DGTZ_ReadRegister(_device_handle, addrn, &regn);
+    if (verbose){
+      
+      if ( ret != CAEN_DGTZ_Success ) {
+	std::cout<<"CAEN_DGTZ_ReadRegister "<<std::hex<<addrn<< " failed with "<<ret<<std::endl;
+      } else {
+	//std::cout<<std::hex<<addrn<<" read  to be "<<std::bitset<32>(regn)<<" == "<<std::hex<<regn<<std::dec<<std::endl;
+      }
+    }
+    }
 
+  unsigned regnn;
+  ret = CAEN_DGTZ_ReadRegister(_device_handle, 0x800C, &regnn);
+  if ( ret != CAEN_DGTZ_Success ) {
+    std::cout<<"CAEN_DGTZ_ReadRegister 0x800C failed with "<<ret<<std::endl;
+  } else {
+    std::cout<<"0x800C"<<" read  to be "<<std::bitset<32>(regnn)<<" == "<<std::hex<<regnn<<std::dec<<std::endl;
+  }
+  ret = CAEN_DGTZ_WriteRegister(_device_handle, 0x800C, ( 0x00 ) );
+  ret = CAEN_DGTZ_ReadRegister(_device_handle, 0x800C, &regnn);
+  ret = CAEN_DGTZ_WriteRegister(_device_handle, 0x800C, ( 0x00 ) );
+
+  ret = CAEN_DGTZ_ReadRegister(_device_handle, 0x800C, &regnn);
+  if ( ret != CAEN_DGTZ_Success ) {
+    std::cout<<"CAEN_DGTZ_ReadRegister 0x800C failed with "<<ret<<std::endl;
+  } else {
+    std::cout<<"0x800C"<<" read  to be "<<std::bitset<32>(regnn)<<" == "<<std::hex<<regnn<<std::dec<<std::endl;
+  }
+  
   /* WARNING: The mallocs MUST be done after the digitizer programming,
      because the following functions needs to know the digitizer configuration
      to allocate the right memory amount */
@@ -1206,12 +1274,60 @@ int v1720CONET2::InitializeForAcq()
   
   
   // WriteReg(0x8004, 1);
-  WriteReg(0x800C, 9);
+  ////register for number of buffers to be read out (see multi-event memory organization in 1720 manual)
+  WriteReg(0x800C, 0x07);
   
+  //ret = CAEN_DGTZ_ReadRegister(_device_handle, 0x8020, &regnn);
+  ret = CAEN_DGTZ_WriteRegister(_device_handle, 0x8020, ( 0x005 ) );
 
+    ret = CAEN_DGTZ_ReadRegister(_device_handle, 0x8020, &regnn);
+   if ( ret != CAEN_DGTZ_Success ) {
+  std::cout<<"CAEN_DGTZ_ReadRegister 0x8020 failed with "<<ret<<std::endl;
+  } else {
+   std::cout<<"0x8020"<<" read  to be "<<std::bitset<32>(regnn)<<" == "<<std::hex<<regnn<<std::dec<<std::endl;
+  }
 
   PrintSettings();
   _settings_touched = false;
+
+  // Final reads for 0x8000 and 0x1n80 registers
+  if (verbose){
+    ret = CAEN_DGTZ_ReadRegister(_device_handle, 0x8000, &reg3);
+    if ( ret != CAEN_DGTZ_Success ) {
+      std::cout<<"CAEN_DGTZ_ReadRegister 0x8000 failed with "<<ret<<std::endl;
+    } else {
+      std::cout<<"0x8000 read to be "<<std::bitset<32>(reg3)<<std::endl;
+    }
+    
+    for (int ich=0; ich<8; ++ich){
+      //std::cout << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" " << ich <<" "<<std::endl;
+      unsigned regn;
+      unsigned addrn = 0x1080 + ich*0x100;
+      ret = CAEN_DGTZ_ReadRegister(_device_handle, addrn, &regn);
+      if ( ret != CAEN_DGTZ_Success ) {
+	std::cout<<"CAEN_DGTZ_ReadRegister "<<std::hex<<addrn<< " failed with "<<ret<<std::endl;
+      } else {
+	std::cout<<std::hex<<addrn<<" read  to be "<<std::bitset<32>(regn)<<" == "<<std::hex<<regn<<std::dec<<std::endl;
+      }
+    }
+  }
+
+  /// Check if bits[1:0] of register 0x8100 so see what acquisition mode is used. See v1720
+  /// user manual pg 25.
+  if (verbose){
+    ret = CAEN_DGTZ_ReadRegister(_device_handle, 0x8100, &reg4);
+    if ( ret != CAEN_DGTZ_Success ) {
+      std::cout<<"CAEN_DGTZ_ReadRegister 0x8000 failed with "<<ret<<std::endl;
+    } else {
+      //std::cout<<"0x8100 read to be "<<std::bitset<32>(reg4)<<std::endl;
+    }
+    ret = CAEN_DGTZ_ReadRegister(_device_handle, 0x800C, &regnn);
+    if ( ret != CAEN_DGTZ_Success ) {
+      std::cout<<"CAEN_DGTZ_ReadRegister 0x800C failed with "<<ret<<std::endl;
+    } else {
+      std::cout<<"0x800C"<<" read  to be "<<std::bitset<32>(regnn)<<" == "<<std::hex<<regnn<<std::dec<<std::endl;
+    }
+  }
 
   return 0;
 }

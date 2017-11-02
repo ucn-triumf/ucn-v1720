@@ -12,8 +12,8 @@
 i=0
 while read -r line
 do
-odbedit -c "set \"Equipment/FEV1720I/Settings/Module0/DC Offset[$i]\" $line" 
-    echo "$line"
+odbedit -c "set \"Equipment/Li6_Detector/Settings/Module0/DC Offset[$i]\" $line" 
+    echo "Setting $line"
 i=$(($i+1))
 
 done < "$1"

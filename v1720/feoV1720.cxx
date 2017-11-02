@@ -178,8 +178,8 @@ BOOL frontend_call_loop = FALSE;
 //! a frontend status page is displayed with this frequency in ms
 INT display_period = 000;
 //! maximum event size produced by this frontend
-INT max_event_size = 100000000;
-//INT max_event_size = 4194304;
+//INT max_event_size = 100000000;
+INT max_event_size = 4194304;
 //! maximum event size for fragmented events (EQ_FRAGMENTED)
 INT max_event_size_frag = 200 * 1024 * 1024;
 //5 * 409600;//5 * 1024 * 1024;
@@ -212,7 +212,7 @@ INT read_buffer_level(char *pevent, INT off);
 EQUIPMENT equipment[] =
 {
   {
-    "FEV1720I",            /* equipment name */
+    "Li6_Detector",            /* equipment name */
     {
       EQ_EVID, EQ_TRGMSK,     /* event ID, trigger mask */
       //      //Use this to make different frontends (indexes) write
@@ -638,8 +638,9 @@ extern "C" INT poll_event(INT source, INT count, BOOL test) {
       //read the vme status register and check if event ready
       bool evtReady = false;
       //bool evtReady = true;
+      int j = 0;
       for (itv1720 = ov1720.begin(); itv1720 != ov1720.end(); ++itv1720){
-	
+	j++;
 	itv1720->ReadReg(V1720_VME_STATUS, &vmeStat);
 	
 	//if (vmeStat !=0x8) printf(" vmeStat=%d\n",vmeStat);
@@ -648,8 +649,10 @@ extern "C" INT poll_event(INT source, INT count, BOOL test) {
 	
         //if( !(vmeStat & 0x1) )
 	//  evtReady = false;
-	if( vmeStat & 0x1 )
+	if( vmeStat & 0x1 ){
+	  printf("Event ready: board: %i ",j);
 	  evtReady = true;
+	}
 
       }	
       
