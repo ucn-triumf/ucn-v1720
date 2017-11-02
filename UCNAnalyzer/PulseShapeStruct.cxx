@@ -10,10 +10,6 @@ void DPP_Bank_Out_Print(DPP_Bank_Out_t *b){
 	   << " Baseline   =" << b->Baseline	 	   
 	   << " Pur	  =" << b->Pur	 
 	   << " Length     =" << b->Length<<std::endl;   
-
-  //std::cout<<"size of TimeTag "<<(sizeof)b->TimeTag<<std::endl;
-
-
   return;
 }
 
@@ -21,10 +17,8 @@ void DPP_Bank_Out_Print(DPP_Bank_Out_t *b){
 // initialize structures
 void DPPBankHandler::Init( char* pdata){
   fData = pdata;
-
   // if at the beginning of the data, initialize memory
   if ( fFirst == true ){ 
-
     // set pointer to first event
     uint32_t *value32;
     value32   = (uint32_t*)pdata;
@@ -41,19 +35,21 @@ void DPPBankHandler::Init( char* pdata){
 	maxsub[ b->Channel ] ++;
       pdata += sizeof( DPP_Bank_Out_t );     // increment pointer for size of dpp structure
       pdata += b->Length*sizeof( uint16_t ); // increment pointer for size of waveform
-      b = (DPP_Bank_Out_t*)pdata;
+      b = (DPP_Bank_Out_t*)pdata; //seg fault seems to happen after this line but before 3....
     }
+  
     fMaxSubEv=0; // maximum number of waveforms in each channel
     for (int ich=0; ich<PSD_MAXNCHAN; ich++){
       if (maxsub[ich] > fMaxSubEv) fMaxSubEv = maxsub[ich];
     }
 
     // now  init memory
-    if (fMaxSubEv<50000) fMaxSubEv=50000;
+    if (fMaxSubEv<50000) fMaxSubEv=50000;/////changed from 50000 A.Sikora, Aug 2 2017
     for (int ich=0; ich<PSD_MAXNCHAN; ich++){
       fDPPInfo[ich] = new DPP_Bank_Out_t*[ fMaxSubEv ];
       fWaveforms[ich] = new uint16_t*[ fMaxSubEv ];
     }
+ 
     pdata = fData;
     if(verbose)
       std::cout<<"<PulseShapeStruct::Init> FirstEvent, MaxSubEv="<<fMaxSubEv<<std::endl;
@@ -63,12 +59,13 @@ void DPPBankHandler::Init( char* pdata){
   // clear nwaves:
   bzero((void*)fNWaves, PSD_MAXNCHAN*sizeof(int) );
   if ( fMaxSubEv <= 0 ) return;
-
+ 
   uint32_t *value32;
   value32   = (uint32_t*)pdata;
   fNTotal = (long) *value32;
   pdata += sizeof(uint32_t);
   DPP_Bank_Out_t * b;
+ 
 
   // organize data into bank structure for readout
   if (verbose)  std::cout<<"fNTotal here ="<<fNTotal<<std::endl;
@@ -77,7 +74,6 @@ void DPPBankHandler::Init( char* pdata){
     pdata+= sizeof(DPP_Bank_Out_t);
     uint16_t * wf = (uint16_t*)pdata;
     pdata+=sizeof(uint16_t)*b->Length;
-
      if(verbose) {
       std::cout<<"<PulseShapeStruct::Init>"<<std::endl;
       std::cout<<" ev="<<iev
