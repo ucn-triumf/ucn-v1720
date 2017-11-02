@@ -7,6 +7,7 @@
 #include "TCanvas.h"
 #include "TTree.h"
 #include <iostream>
+#include <fstream>
 //#include "HVEvent.h"
 
 using namespace std;
@@ -28,6 +29,12 @@ class TUCNAnaManager {
   int GetVoltage(int i) {return tMVolt[i];}//added June 17, 2016
 
  private:
+
+  ofstream EventCounter;
+  long int totalPulses;
+  long int valveOpenEvents;
+  int valveOpen=0; //= 0 closed, 1 = open
+  int valveChan = 14;
   
   double fFirstPulseFittedTime;
 
@@ -39,8 +46,6 @@ class TUCNAnaManager {
 
   // output file
   TTree * tUCN;
-  TTree * tSlow;
-  TTree * tHV;
 
   // branches
 
@@ -51,7 +56,7 @@ class TUCNAnaManager {
   ULong64_t tTimeStamp;
   Short_t tChannel;
   Short_t tLength;
-  //Short_t tPulse[1000];
+  Short_t tPulse[1000];
   Float_t tPSD;
   Short_t tChargeL;
   Short_t tChargeS;
@@ -79,7 +84,7 @@ class TUCNAnaManager {
   // runtime variables
   int index;
   DPP_Bank_Out_t *b;
-  //uint16_t *wf;
+  uint16_t *wf;
   uint16_t *p;
   float *ps;
   int nEvents;

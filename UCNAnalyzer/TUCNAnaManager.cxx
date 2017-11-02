@@ -3,6 +3,8 @@
 #include "TUCNAnaManager.h"
 #include "TF1.h"
 #include <cmath>
+#include <fstream>
+#include <iostream>
 
 TUCNAnaManager::TUCNAnaManager(int run, int time){
 
@@ -30,41 +32,22 @@ TUCNAnaManager::TUCNAnaManager(int run, int time){
   tUCN->Branch("tChargeS",  &tChargeS,  "tChargeS/s");
   tUCN->Branch("tBaseline", &tBaseline, "tBaseline/s");
   tUCN->Branch("tLength",   &tLength,   "tLength/s");
-  // tUCN->Branch("tPulse",     tPulse,    "tPulse[tLength]/s");
-
-  // tree for slow control data
-  tSlow = new TTree("tSlow", "Slow");
-  tSlow->Branch("tTemp1",   &tTemp1,   "tTemp1/f");
-  tSlow->Branch("tTemp2",   &tTemp2,   "tTemp2/f");
-  tSlow->Branch("tPress",   &tPress,   "tPress/f");
-  //tSlow->Branch("tHV",      &tHV,      "tHV/f");
-  tSlow->Branch("tTimeS",   &tTimeS,   "tTimeS/l");
-  tSlow->Branch("tPSDIndex",&tPSDIndex,"tPSDIndex/l");
+  tUCN->Branch("tPulse",     tPulse,    "tPulse[tLength]/s");
 
 
-  // tree for HV monitor data
-  tHV = new TTree("tHV","High Voltage Monitor");
-  //tHV->Branch("tSVolt", tSVolt, "tSVolt[24]/f");  
-  tHV->Branch("tMVolt", tMVolt, "tMVolt[24]/f");  
-  tHV->Branch("tMCurr", tMCurr, "tMCurr[24]/f");  
-  //tHV->Branch("tChStat",tChStat,"tChStat[24]/O");  
-  //tHV->Branch("tMTemp", tMTemp, "tMTemp[24]/f");
-  tHV->Branch("tTimeH", &tTimeH, "tTimeH/l");
-  tHV->Branch("tEventH",&tEventH,"tEventH/l");
-  //hvEvent = new HVEvent();
-  //tHV->Branch("HVEvent",&hvEvent,160000,0);
-
-  verbose = 0;
-
-  prevEvent = {0};
-  currEvent = {0};
-  base      = {0};
-  //tSVolt    = {0};
-  tMVolt    = {0};
-  tMCurr    = {0};
+  verbose = 1;
+  for (int i = 0; i < 16; i++)
+    {
+      prevEvent[i] = 0;
+      currEvent[i] = 0;  //currEvent = {0}; //May 19, 2017 by A. E. Sikora
+      base[i]      = 0;  //base      = {0};
+      //tSVolt     = {0};
+      tMVolt[i]    = 0;  //tMVolt    = {0};
+      tMCurr[i]    = 0;  //tMCurr    = {0};
+    }
   //tChStat   = {0};
   //tMTemp    = {0};
-
+    
 
   subTotEvent = 0;
   subTotEventH = 0;
@@ -101,10 +84,11 @@ int TUCNAnaManager::FindAndFitPulses(TDataContainer& dataContainer){
   TMidasEvent sample = dataContainer.GetMidasEvent();
   //int eventID;
 
-  // printf("time: %d\n",sample.GetTimeStamp());
+  
 
   // output bank block information
   if(verbose) {
+    printf("time: %d\n",sample.GetTimeStamp());
     printf("event id: %d\n",sample.GetEventId());
     printf("trigger mask: %d\n",sample.GetTriggerMask());
     printf("serial number: %d\n",sample.GetSerialNumber());
@@ -115,7 +99,18 @@ int TUCNAnaManager::FindAndFitPulses(TDataContainer& dataContainer){
     printf("  bank list:\n");
     printf(sample.GetBankList());
     printf("\n");
+
   }
+
+  if ( strstr( sample.GetBankList(), "W2\0" ) == NULL ) {
+    printf("Bank list did not contain v1720 digitizer bank\n");
+    return 0;
+  }
+
+
+  // ignore event id's that we don't know about:
+  std::cout<<"Event id: "<<sample.GetEventId()<<std::endl;;
+  //if ( sample.GetEventId() != 1 ) return 0;
 
   TMidas_BANK32 * bank = NULL;
   TMidas_BANK *bank2 = NULL;
@@ -173,6 +168,7 @@ int TUCNAnaManager::FindAndFitPulses(TDataContainer& dataContainer){
     } // end looping through banks
     
     // grab each subevent
+    //EventCounter.open("EventCounter.txt");
 
     int haveCh[16] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
     long int total_pulses = 0;
@@ -180,7 +176,6 @@ int TUCNAnaManager::FindAndFitPulses(TDataContainer& dataContainer){
       for (ichan = 0; ichan < PSD_MAXNCHAN;ichan++) {
 	for (isubev = 0;isubev< fDPP[iboard].GetNWaves(ichan) ;isubev++) {
 	  b  = fDPP[iboard].GetPSD( isubev, ichan );
-	  //wf = fDPP[iboard].GetWaveform( isubev, ichan );
 	  
 	  if ( b==NULL) {
 	    if(verbose)
@@ -190,6 +185,15 @@ int TUCNAnaManager::FindAndFitPulses(TDataContainer& dataContainer){
 	  }
 	  total_pulses++;
 	  //continue;
+	  // totalPulses++;
+	  //if (ichan==valveChan && valveOpen == 0)
+	  // valveOpen = 1;
+	  //else if (ichan == valveChan && valveOpen == 1)
+	  // valveOpen = 0;
+	  //if (valveOpen == 1)
+	  //  valveOpenEvents++;
+	  //if (ichan == valveChan)
+	  //  EventCounter<<totalPulses<<"\t"<<valveOpenEvents<<"\n";
 	  
 	  // event information
 	  tEvent    = isubev;
@@ -217,10 +221,12 @@ int TUCNAnaManager::FindAndFitPulses(TDataContainer& dataContainer){
 	  tPSD      = ((Float_t)(tChargeL)-(Float_t)(tChargeS))/((Float_t)(tChargeL));
 	  tBaseline = b->Baseline;
 	  tLength   = b->Length;
-	  
-	  // waveform information
-	  //for (int i=0;i<tLength;i++) 
-	  //  tPulse[i] = wf[i];
+
+	  bzero( tPulse, 1000 );
+	  if ( tLength > 0 ){
+	    wf = fDPP[iboard].GetWaveform( isubev, ichan );
+	    memcpy( tPulse, wf, tLength*sizeof(uint16_t) );
+	  }
 	  
 	  // fill event tree
 	  tUCN->Fill();
@@ -233,11 +239,8 @@ int TUCNAnaManager::FindAndFitPulses(TDataContainer& dataContainer){
 	}
       }
     } // end filling event tree tUCN
-
-    //for(int ii = 0; ii < 16; ii++){
-    //if(haveCh[ii]) std::cout << ii << " ";
-    //  }
-    //std::cout << " tot pulses: " << total_pulses << std::endl;
+    //EventCounter<<totalPulses<<"\t"<<valveOpenEvents<<"\n";
+    //EventCounter.close();
 
 
     static bool myfirsttime = true;
@@ -249,7 +252,6 @@ int TUCNAnaManager::FindAndFitPulses(TDataContainer& dataContainer){
     total_pulse_cumul += 	total_pulses;			
     double dtime = (double)( sample.GetTimeStamp() - LastTime);
 
-    //std::cout << dtime << "dtime " << std::endl;
     if(dtime > 10.0){
       std::cout << "Total pulse rate " << ((double) total_pulse_cumul) / ((double)dtime *1000.0) << " kHz" <<
 	" " << total_pulse_cumul << " " << dtime << std::endl;
@@ -261,138 +263,8 @@ int TUCNAnaManager::FindAndFitPulses(TDataContainer& dataContainer){
 
 
     
-    // check for HV monitor event
-  } else if (sample.GetEventId() == 0x001e) {
     
-    sample.Print();
-    void *ptr;
-    int size;
-
-    // time stamp of read
-    tTimeH = sample.GetTimeStamp();
-    //hvEvent->SetTime((ULong_t)tTimeH);
-    // // set voltage per channel
-    // size = sample.LocateBank(NULL,"DMND",&ptr);
-    // if (ptr) {
-    //   cout<<"Set Voltage"<<endl;
-
-    //   p = (uint16_t*)ptr;
-    //   for (int i=0;i<tLength;i++) {
-    // 	tSVolt[i] = ((float*)p)[i];
-    // 	if(verbose)
-    // 	  cout<<p[i]<<" ";
-    //   }
-    //   if(verbose)
-    // 	cout<<endl;
-
-    //   cout<<((float*)p)[0];
-    // }
-
-    // Measured voltage per channel
-    size = sample.LocateBank(NULL,"MSRD",&ptr);
-    if (ptr) {
-      
-      cout<<"Measured Voltage"<<endl;
-
-      p = (uint16_t*)ptr;
-      ps = (float*)ptr;
-      //std::copy(ps,ps+(sizeof(ps)/sizeof(*ps)), tMVolt);
-      //hvEvent->SetVolt(ps);
-      for (int i=0;i<HVCHANNELS;i++) {
-	tMVolt[i] = ps[i];
-      //if(verbose)
-        //cout<<tMVolt[i] << " " << ps[i]<<" ";
-      //}
-      //if(verbose)
-      }
-      //cout<<endl;
-    }
-
-    // Measured current
-    size = sample.LocateBank(NULL,"CRNT",&ptr);
-    if(ptr) {
- 
-      //
-      p = (uint16_t*)ptr;
-      ps = (float*)ptr;
-      std::copy(ps,ps+(sizeof(ps)/sizeof(*ps)), tMCurr);
-      //hvEvent->SetCurr(ps);
-      for (int i=0;i<tLength;i++) 
-	tMCurr[i] = ps[i];
-      
-      //
-      //if(verbose) {
-      //cout<<"Measured Current"<<endl;
-      //for (int i=0;i<tLength;i++)
-      //  cout<<ps[i]<<" "<<tMCurr[i]<<" ";
-      //cout<<endl;
-	//}
-    }
-
-    // // Channel status
-    // size = sample.LocateBank(NULL,"STAT",&ptr);
-    // if(ptr) {
-      
-    //   //      
-    //   p = (uint16_t*)ptr;
-    //   for (int i=0;i<tLength;i++) 
-    // 	tChStat[i] = ((float*)p)[i];
-
-    //   //
-    //   if(verbose) {
-    // 	cout<<"Channel Status"<<endl;
-    // 	for (int i=0;i<tLength;i++) 
-    // 	  cout<<((float*)p)[i]<<" ";
-    // 	cout<<endl;
-    //   }
-    // }
-
-    // // Temperature of each channel
-    // size = sample.LocateBank(NULL,"TPTR",&ptr);
-    // if(ptr) {
-      
-    //   // Fill array with temperature measurements
-    //   p = (uint16_t*)ptr;
-    //   float *ps = (float*)ptr;
-    //   // for (int i=0;i<tLength;i++) 
-    //   // 	tMTemp[i] = ps[i];
-	
-    //   // if verbose, output the measured temperature
-    //   //if(verbose) {
-    // 	cout<<"Temperature"<<endl;
-    // 	std::copy(ps,ps+(sizeof(ps)/sizeof(*ps)), tMTemp);
-    // 	for (int i=0;i<tLength;i++)
-    // 	  cout<<tMTemp[i]<<" ";
-    //   	cout<<endl;
-    // 	// }
-
-    // }
-
-    // number of events between reads
-    tEventH = subTotEventH;
-    //hvEvent->SetEvent(subTotEventH);
-
-    //
-    tHV->Fill();
-
-    // reset subtotal counter
-    subTotEventH = 0;
-
-    // if reaches here, slow control event
-  } else {
-    // if smaller bank, then slow control data
-    sample.IterateBank(&bank2,&pdata);
-    tTimeS  = (ULong_t)sample.GetTimeStamp(); // in unix time
-    tTemp1  = ((float*)pdata)[0];
-    tPress  = ((float*)pdata)[1];
-    tTemp2  = ((float*)pdata)[2];
-    //tHV     = ((float*)pdata)[3];
-    tPSDIndex = subTotEvent;//tEntry;
-    tSlow->Fill();
-
-    // reset subtotal counter
-    subTotEvent = 0;
-  }
+  } 
   return 1;  
 
 } // end FindAndFitPulses
