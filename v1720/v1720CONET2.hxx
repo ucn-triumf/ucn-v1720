@@ -87,7 +87,9 @@ private:
   bool _settings_touched; //!< ODB settings touched
   bool _running;          //!< Run in progress
 
-  
+  int EventCounter[8];    //!< save the number of events for each channel; 
+  timeval v1720LastTime;  //!< timestamp for the last reset
+
   /* Buffers to store the data. The memory must be allocated using the appropriate
      CAENDigitizer API functions (see below), so they must not be initialized here
      NB: you must use the right type for different DPP analysis (in this case PSD) */

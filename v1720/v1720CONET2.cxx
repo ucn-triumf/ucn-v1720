@@ -335,6 +335,11 @@ bool v1720CONET2::StartRun()
     InitializeForAcq();
   }
 
+
+  // Reset counters
+  for(int i = 0; i < 8; i++) EventCounter[i] = 0;
+  gettimeofday(&v1720LastTime, NULL);
+
   // save config settings to file
 
 
@@ -576,6 +581,7 @@ bool v1720CONET2::FillEventBank(char * pevent)
     if (!(DPPConfig.Params.ChannelMask & (1<<ch)))
       continue;
     NTotal+=NumEvents[ch];
+    EventCounter[ch] += NumEvents[ch]; // save total events per channel in order to save rates per channel.
   }
 
   // >>> create data bank
@@ -1580,13 +1586,14 @@ bool v1720CONET2::FillBufferLevelBank(char * pevent)
     return false;
   }
 
-  DWORD *pdata, eStored, almostFull, nagg,nepa,status;
+  float *pdata, *pdata2;
+  DWORD eStored, almostFull, nagg,nepa,status;
   int rb_level;
   char statBankName[5];
   CAENComm_ErrorCode sCAEN;
 
   snprintf(statBankName, sizeof(statBankName), "BL%02d", this->GetModuleID());
-  bk_create(pevent, statBankName, TID_DWORD, (void **)&pdata);
+  bk_create(pevent, statBankName, TID_FLOAT, (void **)&pdata);
 
   //ret = CAEN_DGTZ_ReadRegister(_device_handle, 0x8000, &reg3);
   CAEN_DGTZ_ErrorCode ret;
@@ -1602,14 +1609,39 @@ bool v1720CONET2::FillBufferLevelBank(char * pevent)
   // save if there are events ready
   *pdata++ = (status & 0x4);
   // save if any buffers are full
-  *pdate++ = (status & 0x8);
+  *pdata++ = (status & 0x8);
 
-  printf("For board=%i estored,almostfull,busy,n_aggregates= %i, %i, %i  %x %x %x %x\n",_link,eStored,almostFull, nagg,V1720_EVENT_STORED, V1720_ALMOST_FULL_LEVEL, nepa, status);
-
+  if(verbose)  printf("For board=%i estored,almostfull,busy,n_aggregates= %i, %i, %i  %x %x %x %x\n",_link,eStored,almostFull, nagg,V1720_EVENT_STORED, V1720_ALMOST_FULL_LEVEL, nepa, status);
 
   bk_close(pevent, pdata);
 
+  // Make second bank with the rates for each channel.
+  snprintf(statBankName, sizeof(statBankName), "VTR%01d", this->GetModuleID());
+  bk_create(pevent, statBankName, TID_FLOAT, (void **)&pdata2);
 
-  return (sCAEN == CAENComm_Success);
+  struct timeval nowTime;  
+  gettimeofday(&nowTime, NULL);
+  
+  double dtime = nowTime.tv_sec - v1720LastTime.tv_sec + (nowTime.tv_usec - v1720LastTime.tv_usec)/1000000.0;
+  if(verbose) printf("Rates: ");
+  float total_rate = 0;
+  for(int i = 0; i < 8; i++){
+    double rate = 0;
+    if (dtime !=0)
+      rate = (float)EventCounter[i]/(dtime);
+    *pdata2++ = rate;
+
+    total_rate += rate;
+    if(verbose) printf(" %f",rate);
+    EventCounter[i] = 0;
+  }
+  *pdata2++ = total_rate; // save the total rate for the board as well.
+  if(verbose) printf(" %f \n",total_rate);
+  gettimeofday(&v1720LastTime, NULL);
+
+  bk_close(pevent, pdata2);
+
+
+  return bk_size(pevent);
 
 }
