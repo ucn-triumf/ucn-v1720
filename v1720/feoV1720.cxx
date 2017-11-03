@@ -650,7 +650,6 @@ extern "C" INT poll_event(INT source, INT count, BOOL test) {
         //if( !(vmeStat & 0x1) )
 	//  evtReady = false;
 	if( vmeStat & 0x1 ){
-	  printf("Event ready: board: %i ",j);
 	  evtReady = true;
 	}
 
@@ -739,6 +738,13 @@ INT read_trigger_event(char *pevent, INT off) {
 
 // do nothing here
 INT read_buffer_level(char *pevent, INT off) {
+
+  bk_init32(pevent);
+  for (itv1720 = ov1720.begin(); itv1720 != ov1720.end(); ++itv1720){
+    itv1720->FillBufferLevelBank(pevent);
+  }
+  
+  return bk_size(pevent);
 
   return 0;
 }

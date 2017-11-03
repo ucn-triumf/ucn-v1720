@@ -143,7 +143,7 @@ v1720CONET2::v1720CONET2(int feindex, int link, int board, int moduleID, HNDLE h
 {
   _device_handle = -1;
   _settings_handle = 0;
-  verbose = 1;
+  verbose = 0;
   _settings_loaded=false;
   _settings_touched=false;
   _running=false;
@@ -691,15 +691,12 @@ bool v1720CONET2::FillEventBank(char * pevent)
 	memcpy( pdata, (void*)&out, sizeof( out ) ); 
 	pdata += sizeof(out)/sizeof(DWORD);
 
-	std::cout << "Size of out : " << sizeof(out) << " " << sizeof(out)/sizeof(DWORD) << std::endl;
    
 	// save waveform to the pointer before saving to the bank
 	// copy from the first element of the waveform in memory 
 	// to the full length of the array
 	memcpy( pdata, (void*)&Waveform->Trace1[0], out.Length * sizeof( uint16_t ) ); 
 	pdata += out.Length*sizeof( uint16_t )/sizeof(DWORD);
-	std::cout << "Size of length : " <<  out.Length << " " 
-		  << sizeof( uint16_t ) << " " << sizeof(DWORD) << std::endl;
 
       }
       // clear waveform for next event
@@ -1059,6 +1056,8 @@ int v1720CONET2::InitializeForAcq()
     }
   }
 
+
+
   int chmask=1;
   for (int ich=0; ich<8; ich++){
     ret = CAEN_DGTZ_SetChannelSelfTrigger(_device_handle, (CAEN_DGTZ_TriggerMode_t)config.DPPSelfTrig[ich], chmask);
@@ -1273,9 +1272,11 @@ int v1720CONET2::InitializeForAcq()
   }
   
   
-  // WriteReg(0x8004, 1);
-  ////register for number of buffers to be read out (see multi-event memory organization in 1720 manual)
-  WriteReg(0x800C, 0x07);
+  
+  //// set number of aggregates in the v1720 memory (see multi-event memory organization in 1720 manual)
+  WriteReg(0x800C, 0x7);
+  //// set number of events per aggregate
+  WriteReg(0x8034, 0x1);
   
   //ret = CAEN_DGTZ_ReadRegister(_device_handle, 0x8020, &regnn);
   ret = CAEN_DGTZ_WriteRegister(_device_handle, 0x8020, ( 0x005 ) );
@@ -1568,5 +1569,47 @@ void v1720CONET2::SaveSettings(){
 
   printf("%s",output.c_str());
   return;
+
+}
+
+
+bool v1720CONET2::FillBufferLevelBank(char * pevent)
+{
+  if (! this->IsConnected()) {
+    cm_msg(MERROR,"FillBufferLevelBank","Board %d disconnected", this->GetModuleID());
+    return false;
+  }
+
+  DWORD *pdata, eStored, almostFull, nagg,nepa,status;
+  int rb_level;
+  char statBankName[5];
+  CAENComm_ErrorCode sCAEN;
+
+  snprintf(statBankName, sizeof(statBankName), "BL%02d", this->GetModuleID());
+  bk_create(pevent, statBankName, TID_DWORD, (void **)&pdata);
+
+  //ret = CAEN_DGTZ_ReadRegister(_device_handle, 0x8000, &reg3);
+  CAEN_DGTZ_ErrorCode ret;
+
+  //Get v1720 buffer level
+  ret = CAEN_DGTZ_ReadRegister(_device_handle,V1720_EVENT_STORED, &eStored);
+  ret = CAEN_DGTZ_ReadRegister(_device_handle,V1720_ALMOST_FULL_LEVEL, &almostFull);
+  ret = CAEN_DGTZ_ReadRegister(_device_handle,0x800C, &nagg);
+  ret = CAEN_DGTZ_ReadRegister(_device_handle,0x8034, &nepa);
+  ret = CAEN_DGTZ_ReadRegister(_device_handle,0x8104, &status);
+
+
+  // save if there are events ready
+  *pdata++ = (status & 0x4);
+  // save if any buffers are full
+  *pdate++ = (status & 0x8);
+
+  printf("For board=%i estored,almostfull,busy,n_aggregates= %i, %i, %i  %x %x %x %x\n",_link,eStored,almostFull, nagg,V1720_EVENT_STORED, V1720_ALMOST_FULL_LEVEL, nepa, status);
+
+
+  bk_close(pevent, pdata);
+
+
+  return (sCAEN == CAENComm_Success);
 
 }

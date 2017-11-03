@@ -158,6 +158,7 @@ void SaveSettings();
   int InitializeForAcq();
   bool IsConnected();
   bool IsRunning();
+  bool FillBufferLevelBank(char *);
 
   // Getters
   std::string GetName();
