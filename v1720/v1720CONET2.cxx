@@ -1607,9 +1607,9 @@ bool v1720CONET2::FillBufferLevelBank(char * pevent)
 
 
   // save if there are events ready
-  *pdata++ = (status & 0x4);
+  *pdata++ = (status & 0x4) >> 2;
   // save if any buffers are full
-  *pdata++ = (status & 0x8);
+  *pdata++ = (status & 0x8) >> 3;
 
   if(verbose)  printf("For board=%i estored,almostfull,busy,n_aggregates= %i, %i, %i  %x %x %x %x\n",_link,eStored,almostFull, nagg,V1720_EVENT_STORED, V1720_ALMOST_FULL_LEVEL, nepa, status);
 
